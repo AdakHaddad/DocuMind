@@ -1,9 +1,9 @@
 # effi
 Efficiency tools
 
-Kelompok Keren
+Kelompok Keren  
 Ketua Kelompok:  
-Anggota 1: Muhammad Muqtada Alhaddad-22/500341/Tk/54841
-Anggota 2:  
+Anggota 1: Muhammad Muqtada Alhaddad-22/500341/TK/54841  
+Anggota 2: Ramadhani Februarrahman-22/500335/TK/54838  
 Anggota 3:  
 Anggota 4:  
