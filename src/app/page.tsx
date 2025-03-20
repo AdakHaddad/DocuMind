@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import Footer from "../components/layout/Footer";
+import Header from "../components/layout/Header";
 
 const Home = () => {
   return (
@@ -30,6 +32,7 @@ const Home = () => {
           Privacy Policy
         </button>
       </div>
+      <Footer />
     </div>
   );
 };
