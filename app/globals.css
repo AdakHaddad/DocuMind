@@ -1,3 +1,7 @@
+/* global.css */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Open+Sans:wght@400;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -127,24 +131,12 @@
 }
 
 @layer base {
-  @font-face {
-    font-family: "Inter";
-    font-style: normal;
-    font-weight: 100 900;
-    font-display: swap;
-    src: url("/path-to-inter-font.woff2") format("woff2");
-  }
-
-  @font-face {
-    font-family: "Open Sans";
-    font-style: normal;
-    font-weight: 300 800;
-    font-display: swap;
-    src: url("https://fonts.gstatic.com/s/opensans/v23/mem5YaGs126MiZpBA-UN_r8OXOhsEIJMBKpW.ttf")
-      format("woff2");
-  }
-
   :root {
+    --font-inter: "Inter", sans-serif;
+    --font-open-sans: "Open Sans", sans-serif;
+  }
+
+  @theme {
     --font-inter: "Inter", sans-serif;
     --font-open-sans: "Open Sans", sans-serif;
   }

@@ -21,13 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`h-screen overflow-clip flex flex-col bg-[#000000]`}>
-        <div className="flex items-center justify-center bg-documind-primary font-inter py-[.5vw]">
-          <p className="text-[3vw]">{`<header>`}</p>
+      <body className={`h-screen overflow-clip flex flex-col`}>
+        <div className="flex items-center justify-center bg-documind-primary py-[.5vw] mb-[2vw] shadow-[-3px_6px_4px_0px_rgba(0,0,0,0.3)]">
+          <p className="text-[3vw] font-inter">{`<header>`}</p>
         </div>
         <div className="flex grow bg-documind-bg">{children}</div>
-        <div className="flex items-center justify-center bg-documind-primary font-inter py-[.5vw]">
-          <p className="text-[3vw]">{`<footer>`}</p>
+        <div className="flex items-center justify-center bg-documind-primary py-[.5vw] mt-[2vw] shadow-[-3px_-6px_4px_0px_rgba(0,0,0,0.3)]">
+          <p className="text-[3vw] font-inter">{`<footer>`}</p>
         </div>
       </body>
     </html>
