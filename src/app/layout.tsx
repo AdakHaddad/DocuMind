@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+<<<<<<< HEAD
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -25,6 +26,38 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+=======
+import "./globals.css";
+
+import { Inter, Open_Sans } from "next/font/google";
+
+export const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+export const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-open-sans"
+});
+
+export const metadata: Metadata = {
+  title: "DocuMind",
+  description: "DocuMind - Platform Pembelajaran Efisien"
+};
+
+export default function RootLayout({
+  children
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={`h-screen overflow-clip flex flex-col`}>
+        <div className="flex items-center justify-center bg-documind-primary py-[.5vw] mb-[2vw] shadow-[-3px_6px_4px_0px_rgba(0,0,0,0.3)]">
+          <p className="text-[3vw] font-inter">{`<header>`}</p>
+        </div>
+        <div className="flex grow bg-documind-bg">{children}</div>
+        <div className="flex items-center justify-center bg-documind-primary py-[.5vw] mt-[2vw] shadow-[-3px_-6px_4px_0px_rgba(0,0,0,0.3)]">
+          <p className="text-[3vw] font-inter">{`<footer>`}</p>
+        </div>
+>>>>>>> b3116f6cfa86f83fee71b45b75d25fd4c07fd2f0
       </body>
     </html>
   );
