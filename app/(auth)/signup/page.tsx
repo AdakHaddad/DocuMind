@@ -1,49 +1,68 @@
 "use client";
 
+import ModalTemplate from "@/components/ModalTemplate";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import React from "react";
 
-const Home = () => {
+const SignUp = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black">
-      <h1 className="text-4xl font-bold mb-6 font-handwritten">DocuMind</h1>
+    <ModalTemplate
+      content={
+        <div className="flex flex-col items-center justify-center mb-2">
+          <h1 className="text-4xl font-bold font-inter">
+            <span className="text-documind-text-primary">Docu</span>
+            <span className="text-documind-primary">Mind</span>
+          </h1>
+          <p className="text-documind-text-secondary font-open-sans font-bold text-center leading-5">
+            <span>Your </span>
+            <span className="text-documind-primary">best one-night-study</span>
+            <br />
+            <span>assistant!</span>
+          </p>
+        </div>
+      }
+      subcontent={
+        <div className="flex flex-col gap-1 w-full">
+          <Input
+            label="Username"
+            type="username"
+            id="username"
+            placeholder="Insert your username"
+          />
 
-      <div className="flex flex-col gap-3 w-80">
-        <label className="text-sm font-bold">USERNAME</label>
-        <input
-          type="text"
-          placeholder="Insert your username"
-          className="border-2 border-black p-2 rounded-md"
-        />
+          <Input
+            label="Email"
+            type="email"
+            id="email"
+            placeholder="Insert your email"
+          />
 
-        <label className="text-sm font-bold">EMAIL</label>
-        <input
-          type="email"
-          placeholder="Insert your email"
-          className="border-2 border-black p-2 rounded-md"
-        />
+          <Input
+            label="Password"
+            type="password"
+            id="password"
+            placeholder="Insert your password"
+          />
 
-        <label className="text-sm font-bold">PASSWORD</label>
-        <input
-          type="password"
-          placeholder="Insert your password"
-          className="border-2 border-black p-2 rounded-md"
-        />
-
-        <label className="text-sm font-bold">CONFIRM PASSWORD</label>
-        <input
-          type="password"
-          placeholder="Confirm your password"
-          className="border-2 border-black p-2 rounded-md"
-        />
-      </div>
-
-      <div className="flex gap-3 mt-4">
-        <button className="bg-black text-white px-6 py-2 rounded-md text-lg">
-          Sign Up
-        </button>
-      </div>
-    </div>
+          <Input
+            label="Confirm Password"
+            type="confirm_password"
+            id="confirm_password"
+            placeholder="Insert your password"
+          />
+        </div>
+      }
+      button={
+        <div className="flex gap-2">
+          <Button size="sm">Sign In</Button>
+          <Button size="sm" variant="outline">
+            Sign Up
+          </Button>
+        </div>
+      }
+    />
   );
 };
 
-export default Home;
+export default SignUp;
