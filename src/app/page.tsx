@@ -1,23 +1,49 @@
 "use client";
 
-import React from "react";
+import { useRouter } from "next/navigation";
+import MainFooter from "../components/MainFooter";
+import ModalTemplate from "../components/ModalTemplate";
+import { Button } from "../components/ui/button";
+import { signin, signup } from "../utils/routes";
 
 const Home = () => {
+  const router = useRouter();
+
   return (
-    <div className="flex flex-col items-center justify-center bg-white text-black w-full">
-      <div className="flex flex-col items-center justify-center gap-[1.5vw] shadow-[-4px_4px_6px_0px_rgba(0,0,0,0.3)] rounded-[2vw] p-[3vw]">
-        <div className="flex flex-col items-center justify-center bg-documind-card-bg">
-          <p className="text-[3vw] text-documind-text-primary font-inter">
-            {"<content>"}
-          </p>
-          <p className="text-[2vw] text-documind-text-secondary font-open-sans">
-            {"<sub-content here>"}
-          </p>
-        </div>
-        <div className="text-[2vw] bg-documind-primary text-documind-card-bg py-[.5vw] px-[2vw] rounded-[1vw] font-open-sans">
-          {"<welcome>"}
-        </div>
-      </div>
+    <div className="flex w-full h-full items-center justify-center">
+      <ModalTemplate
+        content={
+          <div className="flex flex-col items-center justify-center mb-4">
+            <h1 className="text-4xl font-bold font-inter">
+              <span className="text-documind-text-primary">Docu</span>
+              <span className="text-documind-primary">Mind</span>
+            </h1>
+            <p className="text-documind-text-secondary font-open-sans font-bold text-center leading-5">
+              <span>Your </span>
+              <span className="text-documind-primary">
+                best one-night-study
+              </span>
+              <br />
+              <span>assistant!</span>
+            </p>
+          </div>
+        }
+        button={
+          <div className="flex flex-col gap-2">
+            <Button size="sm" onClick={() => router.push(signin)}>
+              Sign In
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => router.push(signup)}
+              variant="outline"
+            >
+              Sign Up
+            </Button>
+          </div>
+        }
+      />
+      <MainFooter />
     </div>
   );
 };
