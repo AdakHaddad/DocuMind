@@ -1,3 +1,5 @@
+import MainFooter from "@/src/components/MainFooter";
+
 export default function RootLayout({
   children
 }: Readonly<{
@@ -6,6 +8,7 @@ export default function RootLayout({
   return (
     <div className="flex flex-col items-center justify-center bg-white text-black h-full w-full">
       {children}
+      <MainFooter />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import ModalTemplate from "@/components/ModalTemplate";
-import { Button } from "@/components/ui/button";
+import ModalTemplate from "@/src/components/ModalTemplate";
+import { Button } from "@/src/components/ui/button";
 import React from "react";
 
 const Template = () => {

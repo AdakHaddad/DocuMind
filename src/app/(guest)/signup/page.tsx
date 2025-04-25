@@ -1,15 +1,15 @@
 "use client";
 
-import ModalTemplate from "@/components/ModalTemplate";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import ModalTemplate from "@/src/components/ModalTemplate";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
 import React from "react";
 
-const SignIn = () => {
+const SignUp = () => {
   return (
     <ModalTemplate
       content={
-        <div className="flex flex-col items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center mb-2">
           <h1 className="text-4xl font-bold font-inter">
             <span className="text-documind-text-primary">Docu</span>
             <span className="text-documind-primary">Mind</span>
@@ -23,7 +23,14 @@ const SignIn = () => {
         </div>
       }
       subcontent={
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex flex-col gap-1 w-full">
+          <Input
+            label="Username"
+            type="username"
+            id="username"
+            placeholder="Insert your username"
+          />
+
           <Input
             label="Email"
             type="email"
@@ -35,6 +42,13 @@ const SignIn = () => {
             label="Password"
             type="password"
             id="password"
+            placeholder="Insert your password"
+          />
+
+          <Input
+            label="Confirm Password"
+            type="confirm_password"
+            id="confirm_password"
             placeholder="Insert your password"
           />
         </div>
@@ -51,4 +65,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SignUp;
