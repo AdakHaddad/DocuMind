@@ -19,12 +19,12 @@ const AboutUs = () => {
     },
     {
       title: "Project Manager",
-      name: "Yitzhak E.T.M",
+      name: "Muh. Muqtada Al Haddad",
       image: "https://avatars.githubusercontent.com/u/102123648?v=4"
     },
     {
       title: "Project Manager",
-      name: "Yitzhak E.T.M",
+      name: "Ramadhani Feb.",
       image: "https://avatars.githubusercontent.com/u/102123648?v=4"
     }
   ];
