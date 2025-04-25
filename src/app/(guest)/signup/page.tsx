@@ -30,19 +30,39 @@ const SignUp = () => {
   // Define the submit handler with the correct type
   const onSubmit: SubmitHandler<SignUpFormData> = async (data) => {
     try {
-      // Call NextAuth's signIn function to trigger sign-up or sign-in
-      const res = await LogUser("credentials", {
-        redirect: false,
-        email: data.email,
-        password: data.password,
-        username: data.username
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          username: data.username
+        })
       });
 
-      if (res?.error) {
-        setErrorMessage("Sign-up failed. Please try again.");
-      } else {
-        // Sign-up was successful
+      const result = await response.json();
+
+      if (response.ok) {
+        // User is successfully created
         alert("Sign-up successful!");
+
+        // Now log the user in automatically after successful sign-up
+        const res = await LogUser("credentials", {
+          redirect: false,
+          email: data.email,
+          password: data.password
+        });
+
+        if (res?.error) {
+          setErrorMessage("Sign-in failed. Please try again.");
+        } else {
+          // Sign-in was successful
+          alert("Sign-in successful!");
+        }
+      } else {
+        setErrorMessage(result.error || "Sign-up failed. Please try again.");
       }
     } catch (error) {
       console.error("Error during sign-up:", error);

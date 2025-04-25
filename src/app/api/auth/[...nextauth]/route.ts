@@ -1,7 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDatabase } from "@/src/lib/mongodb";
-import bcrypt from "bcryptjs"; // To hash passwords for better security
+import bcrypt from "bcryptjs";
 
 interface User {
   id: string;
@@ -22,18 +22,10 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // First, check if the user exists and authenticate
-        const user = await signInOrSignUpUser(
-          credentials.email,
-          credentials.password
-        );
+        // Check if the user exists and authenticate
+        const user = await signInUser(credentials.email, credentials.password);
 
-        if (user) {
-          return user;
-        }
-
-        // If no user is found or password doesn't match, return null
-        return null;
+        return user;
       }
     })
   ],
@@ -60,7 +52,7 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 
-async function signInOrSignUpUser(
+async function signInUser(
   email: string,
   password: string
 ): Promise<User | null> {
@@ -85,15 +77,13 @@ async function signInOrSignUpUser(
           username: existingUser.username
         };
       } else {
-        // Password doesn't match
-        return null;
+        return null; // Invalid password
       }
     }
 
-    // If user doesn't exist, return null (no sign-up on login)
-    return null;
+    return null; // User doesn't exist
   } catch (error) {
-    console.error("Error signing in or signing up user:", error);
+    console.error("Error signing in user:", error);
     return null;
   }
 }
