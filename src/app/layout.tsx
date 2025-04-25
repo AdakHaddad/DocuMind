@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { Inter, Open_Sans } from "next/font/google";
+import Providers from "../components/Providers";
 
 export const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const openSans = Open_Sans({
@@ -24,9 +25,11 @@ export default function RootLayout({
       <body
         className={`h-screen overflow-clip flex flex-col py-[5vh] justify-center`}
       >
-        <div className="flex grow max-h-[80vh] overflow-clip bg-documind-bg">
-          {children}
-        </div>
+        <Providers>
+          <div className="flex grow max-h-[80vh] overflow-clip bg-documind-bg">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );
