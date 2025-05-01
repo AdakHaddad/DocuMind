@@ -23,12 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`h-screen overflow-clip flex flex-col py-[5vh] justify-center`}
+        className={`${inter.variable} ${openSans.variable} min-h-screen bg-documind-bg`}
       >
         <Providers>
-          <div className="flex grow max-h-[80vh] overflow-clip bg-documind-bg">
-            {children}
-          </div>
+          <div className="flex flex-col min-h-screen">{children}</div>
         </Providers>
       </body>
     </html>
