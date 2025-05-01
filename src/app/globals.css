@@ -1,5 +1,37 @@
 /* global.css */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Open+Sans:wght@400;700&display=swap");
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Open+Sans:wght@400;700&display=swap");
 @import "tailwindcss";
 
+<<<<<<< HEAD
+=======
+@theme {
+  --color-documind-primary: #4a90e2;
+  --color-documind-secondary: #f5a623;
+  --color-documind-bg: #f7f9fc;
+  --color-documind-card-bg: #ffffff;
+  --color-documind-text-primary: #333333;
+  --color-documind-text-secondary: #666666;
+  --color-documind-success: #2ecc71;
+  --color-documind-error: #e74c3c;
+}
+
+@layer base {
+  :root {
+    --font-inter: "Inter", sans-serif;
+    --font-open-sans: "Open Sans", sans-serif;
+  }
+
+  @theme {
+    --font-inter: "Inter", sans-serif;
+    --font-open-sans: "Open Sans", sans-serif;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+>>>>>>> 15336b01f1b1206778c0e3834b120851c0e6ce1a
