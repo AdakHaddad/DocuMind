@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
+import { X } from "lucide-react";
 
 type AIRoomChatModalProps = {
-  sender: "user" | "ai";
-  message: string;
+  isOpen: boolean;
+  onClose: () => void;
+  documentName: string;
+  sender?: "user" | "ai";
+  message?: string;
 };
 
-const AIRoomChatModal = () => {
+const AIRoomChatModal = ({ isOpen, onClose, documentName }: AIRoomChatModalProps) => {
   const randomDummyResponsesArray = [
     "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
     "It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.",
@@ -21,7 +25,7 @@ const AIRoomChatModal = () => {
     "It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable."
   ];
 
-  const [chats, setChats] = useState<AIRoomChatModalProps[]>([]);
+  const [chats, setChats] = useState<{ sender: "user" | "ai"; message: string }[]>([]);
 
   const handleSendMessage = (message: string) => {
     if (message.trim() === "") return;
@@ -39,12 +43,29 @@ const AIRoomChatModal = () => {
     ]);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="flex items-center justify-center w-full h-full bg-black/40 z-[1] fixed top-0 left-0">
+    <div 
+      className="flex items-center justify-center w-full h-full bg-black/40 z-[1] fixed top-0 left-0"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white rounded-lg border-2 border-blue-400 w-[50%] h-[75%] flex flex-col justify-between p-4 shadow-xl">
         {/* Header */}
-        <div className="text-center font-semibold text-blue-700">
-          AI Room Chat
+        <div className="flex justify-between items-center border-b pb-2">
+          <div className="text-center font-semibold text-blue-700">
+            AI Room Chat - {documentName}
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Chat Area */}

@@ -1,10 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export default function FlashcardView() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const params = useParams();
+  const documentName = params.view as string;
 
   // Dummy flashcards data - in real app this would come from props/API
   const flashcards = [
@@ -42,6 +45,7 @@ export default function FlashcardView() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Flashcards</h1>
+          <p className="text-gray-600 mb-2">Document: {documentName}</p>
           <p className="text-gray-600">
             Card {currentIndex + 1} of {flashcards.length}
           </p>

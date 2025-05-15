@@ -109,16 +109,16 @@ export default function Documents() {
               <p>No documents uploaded yet. Click "Upload New Document" to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {filteredDocs.map((doc, index) => (
-                <div
-                  key={index}
-                  className="border border-documind-primary rounded-md p-4"
-                >
+              <div
+                key={index}
+                className="border border-documind-primary rounded-md p-4"
+              >
                   <h3 className="text-gray-800 font-medium mb-2 truncate" title={doc.documentName}>{doc.documentName}</h3>
-                  <div className="flex justify-center items-center w-full aspect-square mb-3 bg-gray-100 rounded-md">
-                    <FileText className="w-16 h-16 text-documind-primary" />
-                  </div>
+                <div className="flex justify-center items-center w-full aspect-square mb-3 bg-gray-100 rounded-md">
+                  <FileText className="w-16 h-16 text-documind-primary" />
+                </div>
                   <div className="mb-2">
                     <span className="text-xs text-gray-500">{doc.totalFlashcards ?? 0} flashcards generated</span>
                   </div>
@@ -145,9 +145,9 @@ export default function Documents() {
                       </>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
           {uploadError && (
             <div className="text-red-600 text-center mt-4">{uploadError}</div>
