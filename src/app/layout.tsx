@@ -26,7 +26,7 @@ export default function RootLayout({
         className={`${inter.variable} ${openSans.variable} min-h-screen bg-documind-bg`}
       >
         <Providers>
-          <div className="flex flex-col min-h-screen">{children}</div>
+          <div className="flex flex-col h-screen">{children}</div>
         </Providers>
       </body>
     </html>
