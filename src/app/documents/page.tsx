@@ -1,58 +1,75 @@
 "use client";
 import React, { useState } from "react";
 import DocumentUploader from "../../components/documentUploader";
-import { FileText } from "lucide-react"; 
+import { FileText, Loader2 } from "lucide-react";
+import Link from "next/link";
+
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Sample document data
-  const documents = Array(8).fill({
-    title: "Modul 1 - Pemben....pdf",
-    thumbnail: "",
-  });
-
-  /*
+  // Handle document upload and call the API
   const handleDocumentUploaded = async (file: File) => {
     setIsUploading(true);
-
+    setUploadError(null);
+    setUploadProgress(0);
+    
     try {
-      // Create FormData for the API request
-      const formData = new FormData();
-      formData.append("file", file);
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 1000);
 
-      // Send the file to your API endpoint
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to upload document");
-      }
-
-      const result = await response.json();
-      console.log("Upload successful:", result);
-
-      // Close modal and reset state after successful upload
+      // Create dummy document data
+      const dummyDoc = {
+        documentName: file.name,
+        totalFlashcards: 3,
+        flashcards: [
+          {
+            question: "What is the main purpose of this document?",
+            answer: "This is a demo document showing how flashcards work."
+          },
+          {
+            question: "How many flashcards are generated?",
+            answer: "Three flashcards are generated for this demo."
+          },
+          {
+            question: "Is this a real document processing?",
+            answer: "No, this is a demo with dummy data."
+          }
+        ]
+      };
+      
+      setUploadedDocs((prev) => [dummyDoc, ...prev]);
       setIsUploadModalOpen(false);
-
-      // You'd typically reload the documents list here
-    } catch (error) {
-      console.error("Error uploading document:", error);
-      alert("Failed to upload document: " + (error as Error).message);
+    } catch (error: any) {
+      setUploadError(error.message);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
-  */
-  // Temporary placeholder for handleDocumentUploaded
-  const handleDocumentUploaded = (file: File) => {
-    console.log("Document selected:", file.name);
-    setIsUploadModalOpen(false);
-  };
+
+  // Filter documents by search query
+  const filteredDocs = uploadedDocs.filter((doc) =>
+    doc.documentName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <>
@@ -86,28 +103,55 @@ export default function Documents() {
           </div>
 
           {/* Document Grid */}
+          {filteredDocs.length === 0 ? (
+            <div className="text-center text-gray-500 py-12">
+              <FileText className="mx-auto w-16 h-16 mb-4 text-documind-primary" />
+              <p>No documents uploaded yet. Click "Upload New Document" to get started.</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {documents.map((doc, index) => (
+              {filteredDocs.map((doc, index) => (
               <div
                 key={index}
                 className="border border-documind-primary rounded-md p-4"
               >
-                <h3 className="text-gray-800 font-medium mb-2">{doc.title}</h3>
-                {/* Replaced black square with lucide-react PDF icon */}
+                  <h3 className="text-gray-800 font-medium mb-2 truncate" title={doc.documentName}>{doc.documentName}</h3>
                 <div className="flex justify-center items-center w-full aspect-square mb-3 bg-gray-100 rounded-md">
                   <FileText className="w-16 h-16 text-documind-primary" />
                 </div>
-                <div className="flex gap-2">
-                  <button className="bg-documind-primary text-white px-4 py-1 rounded-md flex-1 hover:bg-opacity-90 transition-colors">
-                    Review
-                  </button>
-                  <button className="border border-documind-primary text-documind-primary px-4 py-1 rounded-md flex-1 hover:bg-gray-50 transition-colors">
-                    Delete
-                  </button>
-                </div>
+                  <div className="mb-2">
+                    <span className="text-xs text-gray-500">{doc.totalFlashcards ?? 0} flashcards generated</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {doc.flashcards && doc.flashcards.length > 0 && (
+                      <>
+                        <Link 
+                          href={`/documents/${doc.documentName}/flashcard`}
+                          className="bg-documind-primary text-white px-4 py-2 rounded-md text-center hover:bg-opacity-90 transition-colors"
+                        >
+                          View Flashcards
+                        </Link>
+                        <details className="bg-gray-50 rounded p-2">
+                          <summary className="cursor-pointer text-documind-primary font-medium">Preview Flashcards</summary>
+                          <ul className="mt-2 space-y-2">
+                            {doc.flashcards.map((card: any, idx: number) => (
+                              <li key={idx} className="border rounded p-2 text-sm">
+                                <strong>Q:</strong> {card.question}<br />
+                                <strong>A:</strong> {card.answer}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </>
+                    )}
+                  </div>
               </div>
             ))}
           </div>
+          )}
+          {uploadError && (
+            <div className="text-red-600 text-center mt-4">{uploadError}</div>
+          )}
         </div>
       </main>
 
@@ -159,31 +203,22 @@ export default function Documents() {
 
               {isUploading ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <svg
-                    className="animate-spin h-10 w-10 text-documind-primary mb-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <Loader2 className="animate-spin h-10 w-10 text-documind-primary mb-4" />
                   <p className="text-gray-700 font-medium">
                     Processing document...
                   </p>
                   <p className="text-gray-500 text-sm mt-1">
                     This may take a minute depending on file size.
+                  </p>
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                    <div 
+                      className="bg-documind-primary h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {uploadProgress}% complete
                   </p>
                 </div>
               ) : (
