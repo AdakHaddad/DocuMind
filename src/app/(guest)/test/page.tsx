@@ -1,12 +1,12 @@
 "use client";
 
-import RegeneratePromptModal from "@/src/components/RegeneratePromptModal";
+import ReportQuestionModal from "@/src/components/ReportQuestionModal";
 import React from "react";
 
 const Test = () => {
   return (
     <div className="flex flex-col w-full h-full items-center justify-center relative overflow-clip">
-      <RegeneratePromptModal />
+      <ReportQuestionModal question="1. Hi, what's up!" />
       <h1>Lorem Ipsum</h1>
     </div>
   );
