@@ -1,7 +1,13 @@
 "use client";
 import React from "react";
+import Flashcard from '../../components/Flashcard';
 
 import { useState } from "react";
+
+const STATE_QUESTION = 'question';
+const STATE_ANSWER = 'answer';
+const STATE_REPORT_REASON = 'report_reason';
+const STATE_ASK_QUESTION = 'ask_question';
 
 export default function Flashcards() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,41 +47,42 @@ export default function Flashcards() {
       {/* Main Content */}
       <main className="flex-1 bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-          {/* Search Bar */}
-          {/* <div className="flex gap-4 mb-6">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search query..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-[#f0ad4e] rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4a90e2] focus:border-transparent"
-              />
-            </div>
-            <button className="bg-[#4a90e2] text-white px-6 py-2 rounded-md font-medium hover:bg-[#3a80d2] transition-colors">
-              Search
-            </button>
-          </div> */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  place-items-center gap-6 ">
+          {/* FLASHCARDS */}
+            <Flashcard
+              initialState={STATE_QUESTION}
+              questionText="What is the capital of France?"
+            />
+            <Flashcard
+              initialState={STATE_QUESTION}
+              questionText="How many continents are there?"
+            />
 
-          {/* Document Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {cards.map((card, index) => (
-              <div
-                key={index}
-                className="border-2 border-[#4a90e2] rounded-lg p-4"
-              >
-                <h3 className="text-gray-800 font-medium mb-2">{card.question}</h3>
-                <div className="flex gap-2">
-                  <button className="bg-[#4a90e2] text-white px-4 py-1 rounded-md flex-1 hover:bg-[#3a80d2] transition-colors">
-                    View Answer
-                  </button>
-                  <button className="bg-[#F5A623] text-white px-4 py-1 rounded-md flex-1 hover:bg-gray-400 transition-colors">
-                    Report
-                  </button>
-                </div>
-              </div>
-            ))}
+            {/* Bottom left box in second state (answer) */}
+            <Flashcard
+              initialState={STATE_ANSWER}
+              questionText="What is H2O?"
+              answerText="H2O is the chemical formula for water, consisting of two hydrogen atoms and one oxygen atom."
+            />
+
+            {/* Bottom right box in third state (report reason) */}
+            <Flashcard
+              initialState={STATE_REPORT_REASON}
+              questionText="Why is the sky blue?" // Question that led to report
+              answerText="The sky appears blue because of a phenomenon called Rayleigh scattering..."
+            />
+
+            <Flashcard
+              initialState={STATE_QUESTION}
+              questionText="What is the capital of France?"
+            />
+            <Flashcard
+              initialState={STATE_QUESTION}
+              questionText="How many continents are there?"
+            />
           </div>
+        
+        
           {/* Buttons */}
           <div className="flex justify-center items-center gap-4 mt-6">
             <button className="border-3 border-[#4a90e2] bg-[#4a90e2] text-white px-6 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] transition-colors shadow-md">
@@ -86,6 +93,7 @@ export default function Flashcards() {
             </button>
           </div>
         </div>
+
       </main>
 
       {/* Footer */}
