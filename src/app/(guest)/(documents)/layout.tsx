@@ -1,0 +1,42 @@
+"use client";
+
+import Header from "@/src/components/Header";
+
+export default function RootLayout({
+  children
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <div className="flex flex-col items-center justify-center bg-white text-black h-full w-full">
+      {/* Header */}
+      <Header>
+        <div className="flex gap-4">
+          {/* Back & Doc Name */}
+          <div className="flex gap-4 justify-center items-left">
+            <button className="border-2 border-[#F5A623] bg-[#F5A623] text-white font-bold px-4 py-3 rounded-md hover:bg-gray-400 hover:border-gray-400 transition-colors">
+              {`<<`}
+            </button>
+            <div className="bg-white rounded-md px-6 py-2 shadow-md">
+              <h1 className="text-3xl font-bold">
+                <span className="text-gray-800">
+                  Modul 1 - Rumusan Masalah.pdf
+                </span>
+              </h1>
+            </div>
+          </div>
+          {/* Rename Delete */}
+          <div className="flex gap-4 justify-right items-right">
+            <button className="border-2 border-white bg-transparent text-white px-6 py-3 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white transition-colors shadow-md">
+              Rename
+            </button>
+            <button className="border-2 border-[#F5A623] bg-[#F5A623] text-white font-bold px-4 py-3 rounded-md hover:bg-gray-400 hover:border-gray-400 transition-colors">
+              Delete
+            </button>
+          </div>
+        </div>
+      </Header>
+      {children}
+    </div>
+  );
+}

@@ -35,6 +35,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
   );
 
   const [chats, setChats] = useState<AIRoomChatModalProps[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
 
   useEffect(() => {
     setChats([
@@ -86,17 +87,19 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
           {chats.map((chat, index) => (
             <div
               key={index}
-              className={`self-${chat.sender === "user" ? "end" : "start"} bg-${
-                chat.sender === "user" ? "gray-200" : "blue-100"
-              } text-black px-3 py-1 rounded-lg max-w-[75%]`}
+              className={`flex ${
+                chat.sender === "user" ? "justify-end" : "justify-start"
+              }`}
             >
-              {chat.message}
-              <span className="text-xs text-gray-500 ml-2">
-                {new Date().toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}
-              </span>
+              <div
+                className={`p-2 rounded-md text-sm ${
+                  chat.sender === "user"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                {chat.message}
+              </div>
             </div>
           ))}
         </div>
@@ -107,21 +110,20 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
             type="text"
             placeholder="Make the conversation with AI..."
             className="flex-grow px-3 py-1 rounded-md border border-gray-300 text-sm focus:outline-none"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                handleSendMessage((e.target as HTMLInputElement).value);
-                (e.target as HTMLInputElement).value = "";
+                handleSendMessage(inputMessage);
+                setInputMessage("");
               }
             }}
           />
           <button
             className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600"
             onClick={() => {
-              const input = document.querySelector(
-                'input[type="text"]'
-              ) as HTMLInputElement;
-              handleSendMessage(input.value);
-              input.value = "";
+              handleSendMessage(inputMessage);
+              setInputMessage("");
             }}
           >
             Send
