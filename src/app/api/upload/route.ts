@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -59,14 +59,18 @@ export async function POST(request: NextRequest) {
     // Get file buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Write file to disk (you might want to use a cloud storage in production)
+    // Ensure the uploads directory exists
+    await mkdir(uploadDir, { recursive: true });
+    // Write file to disk
     await writeFile(filePath, buffer);
 
-    // Call Python script with Megaparse to process the file
-    // Adjust the path to your Python script as needed
+    // Call Python script with Docling to process the file
     const pythonScriptPath = path.join(
       process.cwd(),
-      "python",
+      "src",
+      "app",
+      "api",
+      "upload",
       "process_document.py"
     );
 
@@ -85,6 +89,10 @@ export async function POST(request: NextRequest) {
     // Read the generated output from the Python script
     const fs = require("fs");
     const processedData = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+
+    // Store the processed data locally in the uploads directory
+    const processedFilePath = path.join(uploadDir, `${path.basename(uniqueFilename, path.extname(uniqueFilename))}-processed.json`);
+    fs.writeFileSync(processedFilePath, JSON.stringify(processedData, null, 2));
 
     // Return the processed data
     return NextResponse.json({
