@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import MainFooter from "../components/MainFooter";
-import ModalTemplate from "../components/ModalTemplate";
+import ModalTemplate from "../components/modals/ModalTemplate";
 import { Button } from "../components/ui/button";
 import { signin, signup } from "../utils/routes";
 

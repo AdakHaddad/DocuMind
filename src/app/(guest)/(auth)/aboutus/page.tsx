@@ -1,6 +1,6 @@
 "use client";
 
-import ModalTemplate from "@/src/components/ModalTemplate";
+import ModalTemplate from "@/src/components/modals/ModalTemplate";
 import React from "react";
 import Image from "next/image";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Header from "@/src/components/Header";
-import ModalTemplate from "@/src/components/ModalTemplate";
+import ModalTemplate from "@/src/components/modals/ModalTemplate";
 import { main } from "@/src/utils/routes";
 import { useRouter } from "next/navigation";
 

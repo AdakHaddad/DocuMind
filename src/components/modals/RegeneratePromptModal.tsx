@@ -2,7 +2,13 @@
 
 import React, { useState } from "react";
 
-const RegeneratePromptModal = () => {
+interface IRegeneratePromptModal {
+  onClose: () => void;
+}
+
+const RegeneratePromptModal: React.FC<IRegeneratePromptModal> = ({
+  onClose
+}) => {
   const [prompt, setPrompt] = useState("");
 
   const handleRegenerate = () => {
@@ -10,6 +16,8 @@ const RegeneratePromptModal = () => {
     console.log("Regenerating with prompt:", prompt);
     // Clear the input after regeneration
     setPrompt("");
+    // Close the modal
+    onClose();
   };
 
   return (

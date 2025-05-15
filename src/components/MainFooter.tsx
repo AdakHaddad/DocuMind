@@ -1,7 +1,7 @@
 "use client";
 
 import Footer from "@/src/components/Footer";
-import ModalTemplate from "@/src/components/ModalTemplate";
+import ModalTemplate from "@/src/components/modals/ModalTemplate";
 import {
   aboutus,
   main,

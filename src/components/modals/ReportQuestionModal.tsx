@@ -4,10 +4,12 @@ import React, { useState } from "react";
 
 type ReportQuestionModalProps = {
   question: string;
+  onSubmit: (report: string) => void;
 };
 
 const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
-  question
+  question,
+  onSubmit
 }) => {
   const [report, setReport] = useState("");
 
@@ -17,6 +19,8 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
     console.log("Report details:", report);
     // Clear the input after reporting
     setReport("");
+    // Call the onSubmit function to notify the parent component
+    onSubmit(report);
   };
 
   return (
