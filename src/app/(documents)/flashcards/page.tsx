@@ -16,7 +16,7 @@ export default function Flashcards() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen items-center justify-center">
       <div className={showRegenerateModal ? "" : "hidden"}>
         <RegeneratePromptModal
           onClose={() => {

@@ -109,12 +109,12 @@ export default function PDFViewPage() {
               </ol>
             </div>
             
-            {/* <button 
+            <button 
               onClick={handleAskSomething}
               className="w-full bg-[#4a90e2] text-white py-2 rounded-md hover:bg-[#3a80d2] transition-colors"
             >
               Ask Something
-            </button> */}
+            </button>
           </div>
         </div>
 
