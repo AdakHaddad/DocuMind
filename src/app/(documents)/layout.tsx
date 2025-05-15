@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "@/src/components/Header";
+import InsideFooter from "@/src/components/InsideFooter";
 
 export default function RootLayout({
   children
@@ -37,6 +38,7 @@ export default function RootLayout({
         </div>
       </Header>
       {children}
+      <InsideFooter />
     </div>
   );
 }
