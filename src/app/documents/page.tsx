@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import DocumentUploader from "../../components/documentUploader";
+import DocumentUploader from "@/src/components/DocumentUploader";
 import { FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -13,12 +13,13 @@ export default function Documents() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Handle document upload and call the API
-  const handleDocumentUploaded = async (file: File) => {
+  const handleDocumentUploaded = (files: File[]) => {
     setIsUploading(true);
     setUploadError(null);
     setUploadProgress(0);
     
-    try {
+    // Process each file
+    files.forEach((file) => {
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
@@ -31,39 +32,36 @@ export default function Documents() {
       }, 1000);
 
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setUploadProgress(100);
 
-      // Create dummy document data
-      const dummyDoc = {
-        documentName: file.name,
-        totalFlashcards: 3,
-        flashcards: [
-          {
-            question: "What is the main purpose of this document?",
-            answer: "This is a demo document showing how flashcards work."
-          },
-          {
-            question: "How many flashcards are generated?",
-            answer: "Three flashcards are generated for this demo."
-          },
-          {
-            question: "Is this a real document processing?",
-            answer: "No, this is a demo with dummy data."
-          }
-        ]
-      };
-      
-      setUploadedDocs((prev) => [dummyDoc, ...prev]);
-      setIsUploadModalOpen(false);
-    } catch (error: any) {
-      setUploadError(error.message);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
+        // Create dummy document data
+        const dummyDoc = {
+          documentName: file.name,
+          totalFlashcards: 3,
+          flashcards: [
+            {
+              question: "What is the main purpose of this document?",
+              answer: "This is a demo document showing how flashcards work."
+            },
+            {
+              question: "How many flashcards are generated?",
+              answer: "Three flashcards are generated for this demo."
+            },
+            {
+              question: "Is this a real document processing?",
+              answer: "No, this is a demo with dummy data."
+            }
+          ]
+        };
+        
+        setUploadedDocs((prev) => [dummyDoc, ...prev]);
+        setIsUploadModalOpen(false);
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 2000);
+    });
   };
 
   // Filter documents by search query
@@ -114,7 +112,8 @@ export default function Documents() {
               <div
                 key={index}
                 className="border border-documind-primary rounded-md p-4"
-              >
+                >
+                  <Link href={`/overview`}>
                   <h3 className="text-gray-800 font-medium mb-2 truncate" title={doc.documentName}>{doc.documentName}</h3>
                 <div className="flex justify-center items-center w-full aspect-square mb-3 bg-gray-100 rounded-md">
                   <FileText className="w-16 h-16 text-documind-primary" />
@@ -123,28 +122,10 @@ export default function Documents() {
                     <span className="text-xs text-gray-500">{doc.totalFlashcards ?? 0} flashcards generated</span>
                   </div>
                   <div className="flex flex-col gap-2">
-                    {doc.flashcards && doc.flashcards.length > 0 && (
-                      <>
-                        <Link 
-                          href={`/documents/${doc.documentName}/flashcard`}
-                          className="bg-documind-primary text-white px-4 py-2 rounded-md text-center hover:bg-opacity-90 transition-colors"
-                        >
-                          View Flashcards
-                        </Link>
-                        <details className="bg-gray-50 rounded p-2">
-                          <summary className="cursor-pointer text-documind-primary font-medium">Preview Flashcards</summary>
-                          <ul className="mt-2 space-y-2">
-                            {doc.flashcards.map((card: any, idx: number) => (
-                              <li key={idx} className="border rounded p-2 text-sm">
-                                <strong>Q:</strong> {card.question}<br />
-                                <strong>A:</strong> {card.answer}
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      </>
-                    )}
+                    
+
                   </div>
+                  </Link>
               </div>
             ))}
           </div>
@@ -156,7 +137,7 @@ export default function Documents() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-documind-primary py-4 px-6 flex justify-center items-center">
+      <footer className="bg-[#4a90e2] py-4 px-6 flex justify-center items-center">
         <button
           className="bg-white text-gray-800 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors shadow-md"
           onClick={() => setIsUploadModalOpen(true)}
@@ -165,69 +146,12 @@ export default function Documents() {
         </button>
       </footer>
 
-      {/* Upload Modal */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                Upload Document
-              </h2>
-              <button
-                onClick={() => setIsUploadModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-                disabled={isUploading}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Upload a document to generate flash cards. We support PDF and
-                PPT files up to 10MB.
-              </p>
-
-              {isUploading ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="animate-spin h-10 w-10 text-documind-primary mb-4" />
-                  <p className="text-gray-700 font-medium">
-                    Processing document...
-                  </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    This may take a minute depending on file size.
-                  </p>
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                    <div 
-                      className="bg-documind-primary h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    {uploadProgress}% complete
-                  </p>
-                </div>
-              ) : (
-                <DocumentUploader onDocumentUploaded={handleDocumentUploaded} />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Document Uploader Modal */}
+      <DocumentUploader 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        onUpload={handleDocumentUploaded} 
+      />
     </>
   );
 }

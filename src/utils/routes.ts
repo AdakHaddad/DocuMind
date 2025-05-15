@@ -4,6 +4,7 @@ const signup = "/signup";
 const aboutus = "/aboutus";
 const privacypolicy = "/privacypolicy";
 const dashboard = "/documents";
+const overview = "/overview";
 const flashcards = "/flashcards";
 const quiz = "/questions";
 
@@ -14,6 +15,7 @@ export {
   aboutus,
   privacypolicy,
   dashboard,
+  overview,
   flashcards,
   quiz
 };

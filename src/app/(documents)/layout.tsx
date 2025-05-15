@@ -2,6 +2,8 @@
 
 import Header from "@/src/components/Header";
 import InsideFooter from "@/src/components/InsideFooter";
+import { dashboard } from "@/src/utils/routes";
+import Link from "next/link";
 
 export default function RootLayout({
   children
@@ -15,9 +17,11 @@ export default function RootLayout({
         <div className="flex gap-4">
           {/* Back & Doc Name */}
           <div className="flex gap-4 justify-center items-left">
-            <button className="border-2 border-[#F5A623] bg-[#F5A623] text-white font-bold px-4 py-3 rounded-md hover:bg-gray-400 hover:border-gray-400 transition-colors">
+            <Link
+              href={dashboard}
+              className="border-2 border-[#F5A623] bg-[#F5A623] text-white font-bold px-4 py-3 rounded-md hover:bg-gray-400 hover:border-gray-400 transition-colors">
               {`<<`}
-            </button>
+            </Link>
             <div className="bg-white rounded-md px-6 py-2 shadow-md">
               <h1 className="text-3xl font-bold">
                 <span className="text-gray-800">

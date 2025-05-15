@@ -1,117 +1,158 @@
-"use client";
+"use client"
 
-import React, { useState, useRef } from "react";
+import type React from "react"
+
+import { useState, useRef, useCallback } from "react"
+import { Upload } from "lucide-react"
 
 interface DocumentUploaderProps {
-  onDocumentUploaded: (file: File) => void;
+  onUpload: (files: File[]) => void
+  isOpen: boolean
+  onClose: () => void
+  allowedFileTypes?: string[]
 }
 
-const DocumentUploader: React.FC<DocumentUploaderProps> = ({
-  onDocumentUploaded,
-}) => {
-  const [dragActive, setDragActive] = useState<boolean>(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+export default function DocumentUploader({
+  onUpload,
+  isOpen,
+  onClose,
+  allowedFileTypes = [".pdf", ".doc", ".docx", ".txt"],
+}: DocumentUploaderProps) {
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }, [])
 
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (isValidFileType(file)) {
-        onDocumentUploaded(file);
-      } else {
-        alert("Please upload a PDF or PPT file");
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!isDragging) {
+        setIsDragging(true)
       }
-    }
-  };
+    },
+    [isDragging],
+  )
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
 
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (isValidFileType(file)) {
-        onDocumentUploaded(file);
-      } else {
-        alert("Please upload a PDF or PPT file");
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length > 0) {
+        processFiles(files)
       }
-    }
-  };
+    },
+    [onUpload],
+  )
 
-  const isValidFileType = (file: File) => {
-    const acceptedTypes = [
-      "application/pdf",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ];
-    return acceptedTypes.includes(file.type);
-  };
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length > 0) {
+        processFiles(files)
+      }
+    },
+    [onUpload],
+  )
 
-  const onButtonClick = () => {
-    if (inputRef.current) {
-      inputRef.current.click();
+  const processFiles = (files: File[]) => {
+    // Filter files by allowed types if specified
+    const validFiles = allowedFileTypes.length
+      ? files.filter((file) => {
+          const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
+          return allowedFileTypes.includes(extension)
+        })
+      : files
+
+    if (validFiles.length === 0) {
+      alert("Please upload valid document files")
+      return
     }
-  };
+
+    // Simulate upload progress
+    let progress = 0
+    setUploadProgress(progress)
+
+    const interval = setInterval(() => {
+      progress += 10
+      setUploadProgress(progress)
+
+      if (progress >= 100) {
+        clearInterval(interval)
+        setUploadProgress(null)
+        onUpload(validFiles)
+        onClose()
+      }
+    }, 200)
+  }
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  if (!isOpen) return null
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg p-8 transition-colors
-        ${dragActive ? "border-black bg-gray-50" : "border-gray-300"}`}
-      onDragEnter={handleDrag}
-      onDragLeave={handleDrag}
-      onDragOver={handleDrag}
-      onDrop={handleDrop}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        accept=".pdf,.ppt,.pptx"
-        onChange={handleChange}
-      />
-
-      <svg
-        className="w-12 h-12 mb-3 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-white rounded-lg shadow-lg max-w-md w-full p-0 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-        />
-      </svg>
-
-      <p className="mb-2 text-sm text-gray-600">
-        <span className="font-medium">Click to upload</span> or drag and drop
-      </p>
-      <p className="text-xs text-gray-500">PDF or PPT files (max 10MB)</p>
-
-      <button
-        type="button"
-        onClick={onButtonClick}
-        className="mt-4 px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 transition-colors"
-      >
-        Choose File
-      </button>
+        <div className="p-8">
+          <div
+            className={`border-2 ${
+              isDragging ? "border-[#4a90e2] bg-blue-50" : "border-[#4a90e2]"
+            } rounded-lg p-10 flex flex-col items-center justify-center transition-colors`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {uploadProgress !== null ? (
+              <div className="w-full">
+                <div className="mb-2 text-center text-[#4a90e2] font-medium">Uploading... {uploadProgress}%</div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-[#4a90e2] h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Upload size={48} className="text-[#4a90e2] mb-4" />
+                <h3 className="text-[#4a90e2] text-xl font-medium mb-1">Drag & Drop</h3>
+                <p className="text-gray-700 mb-4">to upload files</p>
+                <button
+                  onClick={handleBrowseClick}
+                  className="bg-[#4a90e2] text-white px-6 py-2 rounded-md hover:bg-[#3a80d2] transition-colors"
+                >
+                  Browse files
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileInputChange}
+                  accept={allowedFileTypes.join(",")}
+                  className="hidden"
+                  multiple
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
-  );
-};
-
-export default DocumentUploader;
+  )
+}

@@ -4,8 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Image, Share2, Pencil, Trash2 } from 'lucide-react'
 import { useParams, useRouter } from "next/navigation"
-import ShareModal from "../../../components/ShareDocumentModal"
-import AIRoomChatModal from "../../../components/AIRoomChatModal"
+import ShareModal from "@/src/components/ShareDocumentModal"
+import AIRoomChatModal from "@/src/components/AIRoomChatModal"
 
 export default function PDFViewPage() {
   const [activeTab, setActiveTab] = useState("Overview")
@@ -57,61 +57,9 @@ export default function PDFViewPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="bg-[#4a90e2] py-3 px-4 flex items-center justify-between">
-        <div className="flex items-center flex-1">
-          <Link href="/documents" className="bg-[#f0ad4e] text-white p-2 rounded mr-3 hover:bg-[#ec971f] transition-colors">
-            <ArrowLeft size={20} />
-          </Link>
-          <div className="bg-white rounded-md px-4 py-2 flex-1 max-w-3xl">
-            {isRenaming ? (
-              <form onSubmit={handleRenameSubmit} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newFileName}
-                  onChange={(e) => setNewFileName(e.target.value)}
-                  className="flex-1 px-2 py-1 border rounded"
-                  autoFocus
-                />
-                <button type="submit" className="bg-[#4a90e2] text-white px-3 py-1 rounded">
-                  Save
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setIsRenaming(false)}
-                  className="bg-gray-200 text-gray-700 px-3 py-1 rounded"
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <h1 className="text-xl font-medium text-gray-800 truncate">
-                {fileName}
-              </h1>
-            )}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleRename}
-            className="bg-white text-[#4a90e2] px-4 py-1 rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1"
-          >
-            <Pencil size={16} />
-            Rename
-          </button>
-          <button 
-            onClick={handleDelete}
-            className="bg-[#f0ad4e] text-white px-4 py-1 rounded-md hover:bg-[#ec971f] transition-colors flex items-center gap-1"
-          >
-            <Trash2 size={16} />
-            Delete
-          </button>
-        </div>
-      </header>
+    <div className="flex flex-col h-screen items-center justify-center">
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50 p-4">
         <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col md:flex-row gap-6">
           {/* PDF Content */}
           <div className="flex-1 flex flex-col">
@@ -169,43 +117,6 @@ export default function PDFViewPage() {
             </button>
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-[#4a90e2] py-3 px-6 flex justify-center items-center">
-        <div className="flex gap-2">
-          <button 
-            className={`px-6 py-2 rounded-md font-medium transition-colors ${
-              activeTab === "Overview" 
-                ? "bg-[#f0ad4e] text-white" 
-                : "bg-white text-gray-800 hover:bg-gray-100"
-            }`}
-            onClick={() => setActiveTab("Overview")}
-          >
-            Overview
-          </button>
-          <Link
-            href={`/documents/${encodeURIComponent(fileName)}/flashcard`}
-            className={`px-6 py-2 rounded-md font-medium transition-colors ${
-              activeTab === "Flash Cards" 
-                ? "bg-[#f0ad4e] text-white" 
-                : "bg-white text-gray-800 hover:bg-gray-100"
-            }`}
-          >
-            Flash Cards
-          </Link>
-          <button 
-            className={`px-6 py-2 rounded-md font-medium transition-colors ${
-              activeTab === "Quiz" 
-                ? "bg-[#f0ad4e] text-white" 
-                : "bg-white text-gray-800 hover:bg-gray-100"
-            }`}
-            onClick={() => setActiveTab("Quiz")}
-          >
-            Quiz
-          </button>
-        </div>
-      </footer>
 
       {/* Share Modal */}
       {isShareModalOpen && (

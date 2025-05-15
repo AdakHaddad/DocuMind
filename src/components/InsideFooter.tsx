@@ -2,7 +2,7 @@
 
 import Footer from "@/src/components/Footer";
 import ModalTemplate from "@/src/components/modals/ModalTemplate";
-import { dashboard, flashcards, quiz } from "@/src/utils/routes";
+import { overview, flashcards, quiz } from "@/src/utils/routes";
 import { usePathname, useRouter } from "next/navigation";
 
 export default function InsideFooter() {
@@ -16,7 +16,7 @@ export default function InsideFooter() {
   const navigations: Navigation[] = [
     {
       title: "Overview",
-      route: [dashboard]
+      route: [overview]
     },
     {
       title: "Flashcards",
