@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
+import { unlinkSync, existsSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -47,9 +48,10 @@ export async function POST(request: NextRequest) {
     // Create unique filename and determine paths
     const uniqueFilename = generateUniqueFilename(file.name);
     const uploadDir = path.join(process.cwd(), "uploads");
+    const processedDir = path.join(process.cwd(), "processed");
     const filePath = path.join(uploadDir, uniqueFilename);
     const outputPath = path.join(
-      uploadDir,
+      processedDir,
       `${path.basename(
         uniqueFilename,
         path.extname(uniqueFilename)
@@ -59,8 +61,9 @@ export async function POST(request: NextRequest) {
     // Get file buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Ensure the uploads directory exists
+    // Ensure the uploads and processed directories exist
     await mkdir(uploadDir, { recursive: true });
+    await mkdir(processedDir, { recursive: true });
     // Write file to disk
     await writeFile(filePath, buffer);
 
@@ -74,33 +77,94 @@ export async function POST(request: NextRequest) {
       "process_document.py"
     );
 
-     const { stdout, stderr } = await execPromise(
-      `python "${pythonScriptPath}" "${filePath}" "${outputPath}"`
-    );
+    try {
+      // Execute the Python script
+      const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+        exec(
+          `python "${pythonScriptPath}" "${filePath}" "${outputPath}"`,
+          (error, stdout, stderr) => {
+            if (error) {
+              console.error("Python script error:", {
+                code: error.code,
+                message: error.message,
+                stdout,
+                stderr
+              });
+              reject(error);
+            } else {
+              resolve({ stdout, stderr });
+            }
+          }
+        );
+      });
 
-    if (stderr) {
-      console.error("Python script error:", stderr);
+      // Log warnings but don't treat them as errors
+      if (stderr) {
+        console.warn("Python script warnings:", stderr);
+        // Only throw if it's not a PyTorch warning about pin_memory
+        if (!stderr.includes("pin_memory") && !stderr.includes("UserWarning")) {
+          throw new Error(`Python processing error: ${stderr}`);
+        }
+      }
+
+      // Check if output file exists
+      if (!existsSync(outputPath)) {
+        throw new Error("Processing failed: Output file was not created");
+      }
+
+      // Read the generated output from the Python script
+      let processedData;
+      try {
+        const outputContent = readFileSync(outputPath, "utf8");
+        processedData = JSON.parse(outputContent);
+      } catch (error) {
+        console.error("Error reading/parsing output file:", error);
+        throw new Error("Failed to read or parse processed output");
+      }
+
+      if (!processedData || !processedData.content) {
+        throw new Error("Invalid processing result: missing content");
+      }
+
+      // Store the processed data in the processed directory
+      const processedFilePath = path.join(processedDir, `${path.basename(uniqueFilename, path.extname(uniqueFilename))}-processed.json`);
+      writeFileSync(processedFilePath, JSON.stringify(processedData, null, 2));
+
+      // Clean up the original uploaded file
+      try {
+        unlinkSync(filePath);
+      } catch (error) {
+        console.warn("Could not delete original file:", error);
+      }
+
+      // Return the processed data
+      return NextResponse.json({
+        success: true,
+        filename: file.name,
+        fileSize: file.size,
+        processedData,
+      });
+    } catch (error) {
+      console.error("Error processing file:", error);
+      // Clean up any temporary files
+      try {
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+        }
+        if (existsSync(outputPath)) {
+          unlinkSync(outputPath);
+        }
+      } catch (cleanupError) {
+        console.warn("Error during cleanup:", cleanupError);
+      }
       return NextResponse.json(
-        { error: "Error processing document" },
+        { 
+          error: error instanceof Error ? error.message : "Failed to process file",
+          details: error instanceof Error ? error.stack : undefined
+        },
         { status: 500 }
       );
     }
-
-    // Read the generated output from the Python script
-    const fs = require("fs");
-    const processedData = JSON.parse(fs.readFileSync(outputPath, "utf8"));
-
-    // Store the processed data locally in the uploads directory
-    const processedFilePath = path.join(uploadDir, `${path.basename(uniqueFilename, path.extname(uniqueFilename))}-processed.json`);
-    fs.writeFileSync(processedFilePath, JSON.stringify(processedData, null, 2));
-
-    // Return the processed data
-    return NextResponse.json({
-      success: true,
-      filename: file.name,
-      fileSize: file.size,
-      processedData,
-    });
   } catch (error) {
     console.error("Error in upload route:", error);
     return NextResponse.json(

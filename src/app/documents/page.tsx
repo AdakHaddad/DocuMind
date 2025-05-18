@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import DocumentUploader from "@/src/components/documentUploader";
+import DocumentUploader from "@/src/components/DocumentUploader";
 import { FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -13,55 +13,91 @@ export default function Documents() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Handle document upload and call the API
-  const handleDocumentUploaded = (files: File[]) => {
+  const handleDocumentUploaded = async (files: File[]) => {
     setIsUploading(true);
     setUploadError(null);
     setUploadProgress(0);
     
     // Process each file
-    files.forEach((file) => {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 1000);
+    for (const file of files) {
+      const startTime = Date.now();
+      // Add document card immediately with loading state
+      const tempDoc = {
+        documentName: file.name,
+        fileSize: file.size,
+        processedAt: new Date().toISOString(),
+        processingTime: 'Processing...',
+        status: 'processing'
+      };
+      setUploadedDocs((prev) => [tempDoc, ...prev]);
 
-      // Simulate API delay
-      setTimeout(() => {
+      try {
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Simulate upload progress
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            if (prev >= 90) {
+              clearInterval(progressInterval);
+              return prev;
+            }
+            return prev + 10;
+          });
+        }, 1000);
+
+        // Upload and process the file
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to process document');
+        }
+
+        // Update the document with processed data
+        setUploadedDocs((prev) => prev.map(doc => 
+          doc.documentName === file.name 
+            ? {
+                ...doc,
+                processedData: result.processedData,
+                processingTime: result.processedData.metadata.processing_time,
+                pipelineOptions: result.processedData.metadata.pipeline_options,
+                status: 'completed'
+              }
+            : doc
+        ));
+        
         clearInterval(progressInterval);
         setUploadProgress(100);
-
-        // Create dummy document data
-        const dummyDoc = {
-          documentName: file.name,
-          totalFlashcards: 3,
-          flashcards: [
-            {
-              question: "What is the main purpose of this document?",
-              answer: "This is a demo document showing how flashcards work."
-            },
-            {
-              question: "How many flashcards are generated?",
-              answer: "Three flashcards are generated for this demo."
-            },
-            {
-              question: "Is this a real document processing?",
-              answer: "No, this is a demo with dummy data."
-            }
-          ]
-        };
-        
-        setUploadedDocs((prev) => [dummyDoc, ...prev]);
         setIsUploadModalOpen(false);
         setIsUploading(false);
         setUploadProgress(0);
-      }, 2000);
-    });
+      } catch (error) {
+        // Update the document with error state
+        setUploadedDocs((prev) => prev.map(doc => 
+          doc.documentName === file.name 
+            ? {
+                ...doc,
+                processingTime: 'Failed',
+                status: 'error',
+                error: (error as Error).message
+              }
+            : doc
+        ));
+        setUploadError('Error processing file: ' + (error as Error).message);
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    }
   };
 
   // Filter documents by search query
@@ -111,20 +147,62 @@ export default function Documents() {
               {filteredDocs.map((doc, index) => (
               <div
                 key={index}
-                className="border border-documind-primary rounded-md p-4"
+                className={`border rounded-md p-4 ${
+                  doc.status === 'processing' 
+                    ? 'border-yellow-500 bg-yellow-50' 
+                    : doc.status === 'error'
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-documind-primary'
+                }`}
                 >
                   <Link href={`/overview`}>
                   <h3 className="text-gray-800 font-medium mb-2 truncate" title={doc.documentName}>{doc.documentName}</h3>
                 <div className="flex justify-center items-center w-full aspect-square mb-3 bg-gray-100 rounded-md">
-                  <FileText className="w-16 h-16 text-documind-primary" />
+                  {doc.status === 'processing' ? (
+                    <Loader2 className="w-16 h-16 text-yellow-500 animate-spin" />
+                  ) : (
+                    <FileText className="w-16 h-16 text-documind-primary" />
+                  )}
                 </div>
                   <div className="mb-2">
-                    <span className="text-xs text-gray-500">{doc.totalFlashcards ?? 0} flashcards generated</span>
+                    <span className="text-xs text-gray-500">
+                      {doc.fileSize ? `${(doc.fileSize / 1024).toFixed(1)} KB` : 'Unknown size'}
+                    </span>
+                    <br />
+                    <span className="text-xs text-gray-500">
+                      {doc.status === 'processing' ? 'Processing...' : `Processed: ${new Date(doc.processedAt).toLocaleString()}`}
+                    </span>
+                    <br />
+                    <span className={`text-xs ${
+                      doc.status === 'error' ? 'text-red-500' : 'text-gray-500'
+                    }`}>
+                      {doc.status === 'error' ? `Error: ${doc.error}` : 
+                       doc.status === 'processing' ? 'Processing...' :
+                       `Processing time: ${doc.processingTime || 'N/A'}`}
+                    </span>
+                    {doc.pipelineOptions && (
+                      <>
+                        <br />
+                        <span className="text-xs text-gray-500">
+                          OCR: {doc.pipelineOptions.ocr_enabled ? 'Enabled' : 'Disabled'}
+                          {doc.pipelineOptions.num_threads && ` • ${doc.pipelineOptions.num_threads} threads`}
+                        </span>
+                      </>
+                    )}
                   </div>
-                  <div className="flex flex-col gap-2">
-                    
-
-                  </div>
+                  {doc.status === 'completed' && (
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        className="bg-documind-primary text-white px-4 py-2 rounded-md text-sm hover:bg-opacity-90 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          console.log('Processed data:', doc.processedData);
+                        }}
+                      >
+                        View Processed Content
+                      </button>
+                    </div>
+                  )}
                   </Link>
               </div>
             ))}
