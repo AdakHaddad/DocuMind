@@ -15,11 +15,13 @@ interface Flashcard {
 interface FlashcardRequest {
   documentId: string; // Document ID to create flashcards from
   count: number; // Number of flashcards to generate
+  regeneratePrompt?: string;
 }
 
 // POST method for creating flashcards from a document
 export async function POST(req: NextRequest) {
-  const { documentId, count }: FlashcardRequest = await req.json();
+  const { documentId, count, regeneratePrompt }: FlashcardRequest =
+    await req.json();
 
   // Validate required fields
   if (!documentId || !count) {
@@ -92,6 +94,29 @@ export async function POST(req: NextRequest) {
           .map((report) => `- ${report.question}: ${report.report}`)
           .join("\n")}`
       });
+    }
+
+    // If regeneratePrompt is provided, add it to the messages and add previous flashcards as context
+    if (regeneratePrompt) {
+      messages.push({
+        role: "user",
+        content: `Regenerate flashcards with the following prompt:\n\n${regeneratePrompt}`
+      });
+
+      // Fetch previous flashcards to provide context
+      const flashcardsCollection = db.collection("flashcards");
+      const previousFlashcards = await flashcardsCollection.findOne({
+        documentId: objectId
+      });
+
+      if (previousFlashcards && previousFlashcards.flashcards) {
+        messages.push({
+          role: "user",
+          content: `Here are the previous flashcards for context:\n\n${JSON.stringify(
+            previousFlashcards.flashcards
+          )}`
+        });
+      }
     }
 
     // Call deepseekAsk to get the flashcards

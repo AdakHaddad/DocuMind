@@ -15,11 +15,13 @@ export interface Quiz {
 interface QuizesRequest {
   documentId: string; // Document ID to create quizes from
   count: number; // Number of quizes to generate
+  regeneratePrompt?: string; // Optional prompt for regeneration
 }
 
 // POST method for creating quizes from a document
 export async function POST(req: NextRequest) {
-  const { documentId, count }: QuizesRequest = await req.json();
+  const { documentId, count, regeneratePrompt }: QuizesRequest =
+    await req.json();
 
   // Validate required fields
   if (!documentId || !count) {
@@ -103,6 +105,29 @@ export async function POST(req: NextRequest) {
           .map((report) => `- ${report.question}: ${report.report}`)
           .join("\n")}`
       });
+    }
+
+    // If regeneratePrompt is provided, add it to the messages and add previous quizes as context
+    if (regeneratePrompt) {
+      messages.push({
+        role: "user",
+        content: `Regenerate the quizes with the following prompt:\n\n${regeneratePrompt}`
+      });
+
+      // Add previous quizes as context
+      const quizesCollection = db.collection("quizes");
+      const previousQuizes = await quizesCollection.findOne({
+        documentId: objectId
+      });
+
+      if (previousQuizes && previousQuizes.quizes) {
+        messages.push({
+          role: "user",
+          content: `Previous quizes for context:\n\n${JSON.stringify(
+            previousQuizes.quizes
+          )}`
+        });
+      }
     }
 
     // Call deepseekAsk to get the quizes
