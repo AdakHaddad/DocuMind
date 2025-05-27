@@ -1,25 +1,25 @@
-// src/app/api/learning/flashcards/route.ts
+// src/app/api/learning/quizes/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { deepseekAsk, Messages } from "@/src/app/api/deepseekLogic";
 import { SingleReport } from "../documents/route";
 
-// Flashcard interface
-interface Flashcard {
+export interface Quiz {
   question: string;
-  answer: string;
+  option: string[]; // Multiple choice options
+  answer: string; // Correct answer
 }
 
 // Interface for the request body
-interface FlashcardRequest {
-  documentId: string; // Document ID to create flashcards from
-  count: number; // Number of flashcards to generate
+interface QuizesRequest {
+  documentId: string; // Document ID to create quizes from
+  count: number; // Number of quizes to generate
 }
 
-// POST method for creating flashcards from a document
+// POST method for creating quizes from a document
 export async function POST(req: NextRequest) {
-  const { documentId, count }: FlashcardRequest = await req.json();
+  const { documentId, count }: QuizesRequest = await req.json();
 
   // Validate required fields
   if (!documentId || !count) {
@@ -76,11 +76,22 @@ export async function POST(req: NextRequest) {
     // Get the reports of the document
     const reports: SingleReport[] = document.reports || [];
 
-    // Make the message and command for flashcard generation
+    // Make the message and command for quiz generation
     const messages: Messages = [
       {
         role: "user",
-        content: `Please generate ${count} flashcards from the following document content:\n\n${documentContent}\n\nEach flashcard should be an object with 'question' and 'answer' fields, e.g., { question: 'What is X?', answer: 'X is ...' }. Return the flashcards in JSON format only, without any additional text. Generate exactly ${count} flashcards; if that's not possible, return as many as you can using the most important information from the document. Please respond in English.`
+        content: `
+    Task: Generate ${count} quizzes from the following document content:\n\n${documentContent}
+
+    Each quiz should be an object with a 'question' and five 'answer' options. For example:
+    {
+      question: 'What is X?',
+      options: ['A something', 'B spectacular', 'C riously', 'D finitive', 'E maxing'],
+      answer: 'A something'
+    }
+
+    Please return the quizzes in JSON format only. If you cannot generate ${count} quizzes, return as many as you can. Focus on the most important information from the document to ensure accurate and efficient responses.
+    `
       }
     ];
 
@@ -94,7 +105,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Call deepseekAsk to get the flashcards
+    // Call deepseekAsk to get the quizes
     const response = await deepseekAsk(messages);
 
     if (!response || !response.content) {
@@ -104,39 +115,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const flashcards: Flashcard[] = JSON.parse(
+    const quizes: Quiz[] = JSON.parse(
       response.content.replace(/```json|```/g, "").trim()
     );
 
-    if (!Array.isArray(flashcards) || flashcards.length === 0) {
+    if (!Array.isArray(quizes) || quizes.length === 0) {
       return NextResponse.json(
-        { error: "No flashcards generated" },
+        { error: "No quizes generated" },
         { status: 500 }
       );
     }
 
-    // Add flashcards object into the collection as a single object
-    const flashcardsCollection = db.collection("flashcards");
-    const flashcardObject = {
+    // Add quizes object into the collection as a single object
+    const quizesCollection = db.collection("quizes");
+    const quizObject = {
       documentId: objectId,
-      flashcards: flashcards,
+      quizes: quizes,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    // Insert the flashcards into the database
-    const result = await flashcardsCollection.insertOne(flashcardObject);
+    // Insert the quizes into the database
+    const result = await quizesCollection.insertOne(quizObject);
     if (!result) {
       return NextResponse.json(
-        { error: "Failed to create flashcards" },
+        { error: "Failed to create quizes" },
         { status: 500 }
       );
     }
 
-    // Respond with the generated flashcards
-    return NextResponse.json(flashcards, { status: 200 });
+    // Respond with the generated quizes
+    return NextResponse.json(quizes, { status: 200 });
   } catch (error) {
-    console.error("Error creating flashcards:", error);
+    console.error("Error creating quizes:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

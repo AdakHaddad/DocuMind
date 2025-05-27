@@ -53,12 +53,7 @@ export async function PATCH(req: NextRequest) {
     const messages = [
       {
         role: "user",
-        content: `Please summarize the following document content:\n\n${documentContent}`
-      },
-      {
-        role: "user",
-        content:
-          "Understand your limitation, try to respond fast by using your resources efficiently. Do not repeat the content of the document, just summarize it."
+        content: `Please summarize the following document content:\n\n${documentContent}\n\nUnderstand your limitations and respond quickly by using your resources efficiently. Do not repeat the content of the document; just provide a summary. Please respond in English.`
       }
     ];
 
@@ -72,7 +67,7 @@ export async function PATCH(req: NextRequest) {
     );
 
     return NextResponse.json(
-      { message: "Document summarized successfully", summary },
+      { message: "Document summarized successfully", summary: summary.content },
       { status: 200 }
     );
   } catch (error) {
