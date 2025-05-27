@@ -133,6 +133,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Remove the previous flashcards if they exist (remove all with the same documentId but different _id)
+    await flashcardsCollection.deleteMany({
+      documentId: objectId,
+      _id: { $ne: result.insertedId }
+    });
+
     // Respond with the generated flashcards
     return NextResponse.json(flashcards, { status: 200 });
   } catch (error) {

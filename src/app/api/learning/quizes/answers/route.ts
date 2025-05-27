@@ -1,9 +1,9 @@
-// POST answer, compare for multiple, ask deepseek for essay
+// src/app/api/learning/quizes/answers/route.ts
 
 import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
-import { Quiz } from "../route";
+import { Quiz } from "@/src/app/api/learning/quizes/route";
 import { deepseekAsk } from "@/src/app/api/deepseekLogic";
 
 // Quiz interface

@@ -144,10 +144,57 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Remove the previous quizes if they exist (remove all with the same documentId but different _id)
+    await quizesCollection.deleteMany({
+      documentId: objectId,
+      _id: { $ne: result.insertedId }
+    });
+
     // Respond with the generated quizes
     return NextResponse.json(quizes, { status: 200 });
   } catch (error) {
     console.error("Error creating quizes:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+// GET quizes by document ID
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const documentId = searchParams.get("id");
+
+  // Validate required fields
+  if (!documentId) {
+    return NextResponse.json(
+      { error: "Missing required field: documentId" },
+      { status: 400 }
+    );
+  }
+
+  // Validate ObjectId format
+  if (!ObjectId.isValid(documentId)) {
+    return NextResponse.json(
+      { error: "Invalid document ID format" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = await connectToDatabase();
+    const quizesCollection = db.collection("quizes");
+
+    // Fetch the quizes by document ID
+    const objectId = new ObjectId(documentId);
+    const quizes = await quizesCollection.findOne({ documentId: objectId });
+
+    if (!quizes) {
+      return NextResponse.json({ error: "Quizes not found" }, { status: 404 });
+    }
+
+    // Respond with the found quizes
+    return NextResponse.json(quizes.quizes, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching quizes:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
