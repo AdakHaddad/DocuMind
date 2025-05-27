@@ -9,7 +9,14 @@ interface DocumentRequest {
   content: string;
 }
 
+export interface SingleReport {
+  question: string;
+  report: string;
+}
+
 interface DocumentObject extends DocumentRequest {
+  summary: string;
+  reports: SingleReport[];
   createdAt?: Date; // Optional timestamp field
   updatedAt?: Date; // Optional timestamp field
 }
@@ -34,6 +41,8 @@ export async function POST(req: NextRequest) {
     const newDocument: DocumentObject = {
       title,
       content,
+      summary: "",
+      reports: [], // Initialize with an empty array
       createdAt: new Date(), // Optional: add a timestamp
       updatedAt: new Date() // Optional: add a timestamp
     };
@@ -46,7 +55,9 @@ export async function POST(req: NextRequest) {
       {
         id: result.insertedId.toString(),
         title: newDocument.title,
-        content: newDocument.content
+        content: newDocument.content,
+        summary: newDocument.summary,
+        reports: newDocument.reports
       } as DocumentObject,
       { status: 201 }
     );
