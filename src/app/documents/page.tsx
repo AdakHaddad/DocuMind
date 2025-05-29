@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import DocumentUploader from "@/src/components/documentUploader";
+import DocumentUploader from "@/src/components/DocumentUploader";
 import { FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 
