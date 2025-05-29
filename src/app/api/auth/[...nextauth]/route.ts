@@ -30,7 +30,9 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   pages: {
-    signIn: "/signin"
+    signIn: "/signin",
+    signOut: "/signout"
+    // newUser: "/signup" // Will disable the new account creation screen
   },
   session: {
     strategy: "jwt"

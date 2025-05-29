@@ -14,8 +14,11 @@ export interface SingleReport {
   report: string;
 }
 
-interface DocumentObject extends DocumentRequest {
+interface DocumentObject {
+  title: string;
+  content: string;
   summary: string;
+  access: "public" | "private";
   reports: SingleReport[];
   createdAt?: Date; // Optional timestamp field
   updatedAt?: Date; // Optional timestamp field
@@ -42,6 +45,7 @@ export async function POST(req: NextRequest) {
       title,
       content,
       summary: "",
+      access: "private", // Default access type
       reports: [], // Initialize with an empty array
       createdAt: new Date(), // Optional: add a timestamp
       updatedAt: new Date() // Optional: add a timestamp
@@ -54,10 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         id: result.insertedId.toString(),
-        title: newDocument.title,
-        content: newDocument.content,
-        summary: newDocument.summary,
-        reports: newDocument.reports
+        ...newDocument
       } as DocumentObject,
       { status: 201 }
     );
