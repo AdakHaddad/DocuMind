@@ -51,7 +51,7 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-[#4a90e2] text-white text-center py-3 text-xl font-medium">
+        <div className="bg-[#4a90e2] text-white text-center py-3 text-xl font-semibold">
           Share Access
         </div>
         
@@ -60,12 +60,12 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
           {/* Access Type */}
           <div className="flex items-center gap-3">
             <span className="font-medium text-gray-700 min-w-[100px]">Access Type:</span>
-            <div className="flex rounded-md overflow-hidden border border-[#4a90e2]">
+            <div className="flex rounded-md overflow-hidden border-2 border-[#4a90e2]">
               <button
                 className={`px-4 py-1 ${
                   accessType === "public" 
-                    ? "bg-[#4a90e2] text-white" 
-                    : "bg-white text-gray-700 hover:bg-gray-50"
+                    ? "bg-[#4a90e2] text-white font-medium" 
+                    : "bg-white text-gray-700 hover:bg-gray-200 hover:cursor-pointer font-medium"
                 }`}
                 onClick={() => setAccessType("public")}
               >
@@ -74,8 +74,8 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
               <button
                 className={`px-4 py-1 ${
                   accessType === "private" 
-                    ? "bg-[#4a90e2] text-white" 
-                    : "bg-white text-gray-700 hover:bg-gray-50"
+                    ? "bg-[#4a90e2] text-white font-medium" 
+                    : "bg-white text-gray-700 hover:bg-gray-200 hover:cursor-pointer font-medium"
                 }`}
                 onClick={() => setAccessType("private")}
               >
@@ -86,8 +86,8 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
           
           {/* Access Link */}
           <div className="space-y-2">
-            <span className="font-medium text-gray-700">Access Link:</span>
-            <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-700 mb-2">Access Link:</span>
+            <div className="flex items-center gap-2 mt-2">
               <div className="relative flex-1">
                 <input
                   ref={linkRef}
@@ -99,7 +99,7 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
               </div>
               <button
                 onClick={handleCopy}
-                className="bg-[#4a90e2] text-white px-3 py-2 rounded-md hover:bg-[#3a80d2] transition-colors flex items-center"
+                className="bg-[#4a90e2] text-white px-3 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:cursor-pointer transition-colors flex items-center"
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 <span className="ml-1">{copied ? "Copied" : "Copy"}</span>
@@ -112,7 +112,7 @@ export default function ShareModal({ isOpen, onClose, documentName, documentId }
         <div className="flex justify-center p-4 border-t border-gray-200">
           <button
             onClick={handleSaveChanges}
-            className="bg-[#4a90e2] text-white px-6 py-2 rounded-md hover:bg-[#3a80d2] transition-colors"
+            className="bg-[#4a90e2] text-white px-6 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:cursor-pointer transition-colors"
           >
             Save Changes
           </button>

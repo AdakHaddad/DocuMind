@@ -36,7 +36,7 @@ export default function MainFooter() {
 
   return (
     <Footer>
-      <div className="flex gap-2">
+      <div className="flex gap-2 my-1">
         {navigations.map((nav, index) => (
           <ModalTemplate
             key={index}
