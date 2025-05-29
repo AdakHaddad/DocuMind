@@ -10,9 +10,6 @@ export default function RootLayout({
 }>) {
   // const { data: session } = useSession(); // Using useSession hook to get the session data
 
-  // // Log the session data to the console
-  // console.log("User session:", session);
-
   return (
     <div className="flex flex-col items-center justify-center bg-white text-black h-full w-full">
       {children}
