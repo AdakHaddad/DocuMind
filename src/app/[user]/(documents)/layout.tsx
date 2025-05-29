@@ -86,6 +86,14 @@ export default function RootLayout({
     }
   };
 
+  if (!document || !user) {
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-white text-black">
+        <p className="text-xl">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center bg-white text-black h-full w-full">
       <Header>
@@ -157,7 +165,7 @@ export default function RootLayout({
       </Header>
 
       {children}
-      <InsideFooter />
+      <InsideFooter document={document} />
     </div>
   );
 }

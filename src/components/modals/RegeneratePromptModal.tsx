@@ -3,16 +3,49 @@
 import React, { useState } from "react";
 
 interface IRegeneratePromptModal {
+  documentId: string;
   onClose: () => void;
+  type: "flashcards" | "quizes";
 }
 
 const RegeneratePromptModal: React.FC<IRegeneratePromptModal> = ({
-  onClose
+  documentId,
+  onClose,
+  type
 }) => {
   const [prompt, setPrompt] = useState("");
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     // Logic to handle the regeneration with the prompt
+    try {
+      const endpoint = "/api/learning/" + (type as string); // Adjust endpoint as needed
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          documentId: documentId,
+          count: type === "flashcards" ? 12 : 10,
+          regeneratePrompt: prompt
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to regenerate prompt");
+      }
+
+      const data = await response.json();
+      console.log("Regeneration successful:", data);
+
+      // Refresh the page
+      window.location.reload();
+    } catch (error) {
+      console.error("Error during regeneration:", error);
+      alert("Failed to regenerate prompt. Please try again later.");
+    }
+
     // Clear the input after regeneration
     setPrompt("");
     // Close the modal

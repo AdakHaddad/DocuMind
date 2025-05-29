@@ -8,7 +8,7 @@ type AIRoomChatModalProps = {
   message: string;
 };
 
-type ChatPurpose = "general";
+type ChatPurpose = "general" | "flashcard" | "quiz";
 
 interface IAIRoomChatModal {
   initialChats?: AIRoomChatModalProps[];
@@ -16,6 +16,16 @@ interface IAIRoomChatModal {
   show?: boolean;
   document: DocumentObject;
   purpose: ChatPurpose;
+  flashcard?: {
+    question: string;
+    answer: string;
+  };
+  quiz?: {
+    question: string;
+    userAnswer: string;
+    status: string;
+    explanation: string;
+  };
 }
 
 const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
@@ -23,11 +33,14 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
   onClose = () => {},
   show = false,
   document,
+  flashcard,
+  quiz,
   purpose
 }) => {
   const [chats, setChats] = useState<AIRoomChatModalProps[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [preContext, setPreContext] = useState<string>("");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -48,14 +61,39 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
             switch (purpose) {
               case "general":
                 return `Hi, there! Is there anything I can help related to ${document.title}?`;
-                break;
+              case "flashcard":
+                // parse the flashcards question and answers into one line e.g. Question 1: Answer 1
+                const flashcardQnAPreContext = `Existing flashcard question and answer: ${
+                  flashcard!.question
+                }: ${flashcard!.answer}`;
+
+                // set precontext
+                setPreContext(flashcardQnAPreContext);
+
+                return `Hi, there! You can ask me any question related to the question: ${
+                  flashcard!.question
+                }.`;
+              case "quiz":
+                // parse the quiz question and answer into one line
+                const quizQnAPreContext = `Existing quiz question: ${
+                  quiz!.question
+                }\nUser's answer: ${quiz!.userAnswer}\nStatus of answer: ${
+                  quiz!.status
+                }\nExplanation: ${quiz!.explanation}`;
+
+                // set precontext
+                setPreContext(quizQnAPreContext);
+
+                return `Hi, there! You can ask me any question related to the quiz question: ${
+                  quiz!.question
+                }.`;
             }
           })()
         }
       ]);
       initializedRef.current = true;
     }
-  }, [initialChats, document, purpose]);
+  }, [initialChats, document, purpose, flashcard, quiz]);
 
   const handleSendMessage = async (message: string) => {
     if (message.trim() === "") return;
@@ -69,6 +107,9 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
       { sender: "ai", message: "Please wait, processing your request..." }
     ]);
 
+    // PreContext + Message
+    const mergedMessage = preContext ? `${preContext}\n\n${message}` : message;
+
     // Check if conversationId is set and if not, create a new conversation
     if (!conversationId)
       await fetch(`/api/learning/conversation`, {
@@ -77,7 +118,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          message,
+          message: mergedMessage,
           documentId: document._id,
           purpose,
           conversationId

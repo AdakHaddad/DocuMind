@@ -2,10 +2,14 @@
 
 import Footer from "@/src/components/Footer";
 import ModalTemplate from "@/src/components/modals/ModalTemplate";
-import { flashcards, quiz } from "@/src/utils/routes";
 import { usePathname, useRouter } from "next/navigation";
+import { DocumentObject } from "../app/[user]/page";
 
-export default function InsideFooter() {
+export default function InsideFooter({
+  document
+}: {
+  document: DocumentObject;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -16,15 +20,15 @@ export default function InsideFooter() {
   const navigations: Navigation[] = [
     {
       title: "Overview",
-      route: ["*"]
+      route: [`/${document.owner}/${document.slug}`]
     },
     {
       title: "Flashcards",
-      route: [flashcards]
+      route: [`/${document.owner}/${document.slug}/flashcards`]
     },
     {
       title: "Quiz",
-      route: [quiz]
+      route: [`/${document.owner}/${document.slug}/questions`]
     }
   ];
 

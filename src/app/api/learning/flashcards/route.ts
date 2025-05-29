@@ -35,10 +35,7 @@ export async function POST(req: NextRequest) {
     // Get user session
     const userSession = await GetSession(req);
     if (!userSession) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = userSession as User;
@@ -49,36 +46,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-  const { documentId, count, regeneratePrompt }: FlashcardRequest =
-    await req.json();
+    const { documentId, count, regeneratePrompt }: FlashcardRequest =
+      await req.json();
 
-  // Validate required fields
-  if (!documentId || !count) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing required field: " +
-          (!documentId ? "documentId" : "") +
-          (!count ? "count" : "")
-      },
-      { status: 400 }
-    );
-  }
+    // Validate required fields
+    if (!documentId || !count) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing required field: " +
+            (!documentId ? "documentId" : "") +
+            (!count ? "count" : "")
+        },
+        { status: 400 }
+      );
+    }
 
-  if (typeof count !== "number" || count <= 0) {
-    return NextResponse.json(
-      { error: "Count must be a positive number" },
-      { status: 400 }
-    );
-  }
+    if (typeof count !== "number" || count <= 0) {
+      return NextResponse.json(
+        { error: "Count must be a positive number" },
+        { status: 400 }
+      );
+    }
 
-  // Validate ObjectId format
-  if (!ObjectId.isValid(documentId)) {
-    return NextResponse.json(
-      { error: "Invalid document ID format" },
-      { status: 400 }
-    );
-  }
+    // Validate ObjectId format
+    if (!ObjectId.isValid(documentId)) {
+      return NextResponse.json(
+        { error: "Invalid document ID format" },
+        { status: 400 }
+      );
+    }
 
     // Verify document exists and user has access
     const db = await connectToDatabase();
@@ -184,7 +181,7 @@ export async function POST(req: NextRequest) {
 
     if (existingFlashcards) {
       // Update existing flashcards
-      const result = await flashcardsCollection.updateOne(
+      await flashcardsCollection.updateOne(
         { documentId },
         {
           $set: {
@@ -206,22 +203,25 @@ export async function POST(req: NextRequest) {
       const newFlashcardSet: FlashcardSet = {
         documentId,
         flashcards,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
       const result = await flashcardsCollection.insertOne(newFlashcardSet);
 
-      return NextResponse.json({
-        message: "Flashcards created successfully",
-        _id: result.insertedId,
-        ...newFlashcardSet
-      }, { status: 201 });
+      return NextResponse.json(
+        {
+          message: "Flashcards created successfully",
+          _id: result.insertedId,
+          ...newFlashcardSet
+        },
+        { status: 201 }
+      );
     }
   } catch (error) {
     console.error("Error creating/updating flashcards:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to create/update flashcards",
         details: error instanceof Error ? error.message : "Unknown error"
       },
@@ -233,30 +233,27 @@ export async function POST(req: NextRequest) {
 // GET endpoint to retrieve flashcards for a document
 export async function GET(req: NextRequest) {
   try {
-  const { searchParams } = new URL(req.url);
-    const docId = searchParams.get("docId");
+    const { searchParams } = new URL(req.url);
+    const docId = searchParams.get("docsId");
 
     if (!docId) {
-    return NextResponse.json(
+      return NextResponse.json(
         { error: "Missing document ID" },
-      { status: 400 }
-    );
-  }
+        { status: 400 }
+      );
+    }
 
     if (!ObjectId.isValid(docId)) {
-    return NextResponse.json(
-      { error: "Invalid document ID format" },
-      { status: 400 }
-    );
-  }
+      return NextResponse.json(
+        { error: "Invalid document ID format" },
+        { status: 400 }
+      );
+    }
 
     // Get user session
     const userSession = await GetSession(req);
     if (!userSession) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const db = await connectToDatabase();
@@ -289,10 +286,7 @@ export async function PUT(req: NextRequest) {
   try {
     const userSession = await GetSession(req);
     if (!userSession) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -355,10 +349,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const userSession = await GetSession(req);
     if (!userSession) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -396,4 +387,3 @@ export async function DELETE(req: NextRequest) {
     );
   }
 }
-
