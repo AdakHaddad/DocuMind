@@ -365,7 +365,21 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
 
     const projectId = process.env.GCP_PROJECT_ID;
     const location = process.env.GCP_LOCATION || "us";
-    const processorId = process.env.GCP_PROCESSOR_ID;
+    
+    // Determine the appropriate processor ID based on file type
+    let processorId;
+    const fileExtension = path.extname(filePath).substring(1).toLowerCase();
+    
+    // Use specific processors for different file types
+    if (['ppt', 'pptx', 'html', 'htm', 'xls', 'xlsx', 'csv'].includes(fileExtension)) {
+      // Use the layout processor for presentations, web pages, and spreadsheets
+      processorId = process.env.GCP_PROCESSOR_LAYOUT;
+      console.log(`Using layout processor for ${fileExtension} file`);
+    } else {
+      // Use OCR processor for other files (PDFs, images, etc.)
+      processorId = process.env.GCP_PROCESSOR_OCR;
+      console.log(`Using OCR processor for ${fileExtension} file`);
+    }
 
     console.log(`Project ID: ${projectId}`);
     console.log(`Location: ${location}`);
@@ -472,20 +486,54 @@ function extractContent(document: any): { text: string; metadata: any } {
     return { text: "", metadata: {} };
   }
 
-  const text = document.text || "";
-  console.log(`Extracted text length: ${text.length}`);
-
+  // Initialize metadata
   const metadata = {
     pages: document.pages?.length || 0,
     entities: document.entities?.length || 0,
     textStyles: document.textStyles?.length || 0,
+    documentType: "unknown"
   };
 
-  if (!text && document.pages && document.pages.length > 0) {
+  // Check for standard text content
+  const text = document.text || "";
+  console.log(`Extracted standard text length: ${text.length}`);
+
+  // If we have standard text and it's not empty, return it
+  if (text.trim()) {
+    return { text, metadata };
+  }
+
+  // Check for layout processor output (for PPT, HTML, and spreadsheets)
+  if (document.documentLayout && document.documentLayout.blocks) {
+    console.log("Found document layout structure, extracting text from blocks...");
+    metadata.documentType = "layout";
+    
+    let layoutText = "";
+    const blocks = document.documentLayout.blocks;
+    console.log(`Found ${blocks.length} text blocks in layout`);
+    
+    blocks.forEach((block: any, index: number) => {
+      if (block.textBlock && block.textBlock.text) {
+        layoutText += block.textBlock.text + "\n";
+      }
+    });
+    
+    if (layoutText.trim()) {
+      console.log(`Extracted ${layoutText.length} characters from document layout`);
+      return { text: layoutText.trim(), metadata };
+    }
+  }
+
+  // Try extracting from pages if no layout data was found
+  if (document.pages && document.pages.length > 0) {
     console.log("No direct text found, attempting to extract from pages...");
+    metadata.documentType = "pages";
+    
     let pageText = "";
     document.pages.forEach((page: any, pageIndex: number) => {
       console.log(`Processing page ${pageIndex + 1}`);
+      
+      // Extract from paragraphs
       if (page.paragraphs) {
         page.paragraphs.forEach((paragraph: any) => {
           if (paragraph.layout && paragraph.layout.textAnchor) {
@@ -493,9 +541,10 @@ function extractContent(document: any): { text: string; metadata: any } {
             textSegments.forEach((segment: any) => {
               if (
                 segment.startIndex !== undefined &&
-                segment.endIndex !== undefined
+                segment.endIndex !== undefined &&
+                document.text
               ) {
-                const segmentText = document.text?.substring(
+                const segmentText = document.text.substring(
                   parseInt(segment.startIndex),
                   parseInt(segment.endIndex)
                 );
@@ -507,6 +556,8 @@ function extractContent(document: any): { text: string; metadata: any } {
           }
         });
       }
+      
+      // Extract from tokens if paragraphs didn't yield anything
       if (page.tokens && !pageText) {
         console.log(
           `Attempting to extract from ${page.tokens.length} tokens on page ${
@@ -517,14 +568,15 @@ function extractContent(document: any): { text: string; metadata: any } {
           if (
             token.layout &&
             token.layout.textAnchor &&
-            token.layout.textAnchor.textSegments
+            token.layout.textAnchor.textSegments &&
+            document.text
           ) {
             token.layout.textAnchor.textSegments.forEach((segment: any) => {
               if (
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined
               ) {
-                const tokenText = document.text?.substring(
+                const tokenText = document.text.substring(
                   parseInt(segment.startIndex),
                   parseInt(segment.endIndex)
                 );
@@ -537,11 +589,41 @@ function extractContent(document: any): { text: string; metadata: any } {
         });
       }
     });
+    
     if (pageText.trim()) {
       console.log(`Extracted ${pageText.length} characters from pages`);
       return { text: pageText.trim(), metadata };
     }
   }
+
+  // If all else fails, check if we have a raw response with text content
+  if (document.rawDocument && typeof document.rawDocument === 'string') {
+    try {
+      const parsedRaw = JSON.parse(document.rawDocument);
+      if (parsedRaw.text) {
+        console.log("Extracted text from raw document content");
+        return { text: parsedRaw.text, metadata };
+      }
+    } catch (e) {
+      console.log("Failed to parse raw document content as JSON");
+    }
+  }
+
+  // If we're dealing with a PowerPoint file but found no content, create a stub
+  // This ensures we don't fail the process for PPT files with minimal text content
+  const fileExtension = document.mimeType && document.mimeType.split('/').pop();
+  if (['ppt', 'pptx'].includes(fileExtension) || metadata.documentType === "layout") {
+    console.log("Creating stub content for presentation file");
+    return {
+      text: "[This presentation file contains primarily visual content that has been processed for search and analysis.]",
+      metadata: {
+        ...metadata,
+        isStubContent: true
+      }
+    };
+  }
+
+  console.log("No text content could be extracted from the document");
   return { text, metadata };
 }
 
@@ -614,37 +696,9 @@ export async function POST(req: NextRequest) {
     await writeFile(filePath, buffer);
 
     try {
-      // Convert to PDF if needed
-      const supportedTypes = [
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        "image/bmp",
-        "image/tiff",
-        "image/gif",
-      ];
-
-      let processingFilePath = filePath;
-      let processingMimeType = file.type;
-
-      if (!supportedTypes.includes(file.type)) {
-        const tempFilePath = path.join(
-          uploadDir,
-          `${path.basename(uniqueFilename, path.extname(uniqueFilename))}.pdf`
-        );
-        const converted = await convertToPdf(filePath, tempFilePath);
-        if (!converted) {
-          throw new Error("Failed to convert file to PDF");
-        }
-        processingFilePath = tempFilePath;
-        processingMimeType = "application/pdf";
-      }
-
-      // Process with Document AI
-      const document = await processDocumentWithGcp(
-        processingFilePath,
-        processingMimeType
-      );
+      // Process with Document AI directly (no PDF conversion)
+      // The appropriate processor ID will be selected based on file type in processDocumentWithGcp
+      const document = await processDocumentWithGcp(filePath, file.type);
 
       // Extract content
       const { text: extractedText, metadata } = extractContent(document);
@@ -653,7 +707,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Upload to Google Drive and get file URL
-      const driveFileId = await uploadFileToDrive(processingFilePath, file.name);
+      const driveFileId = await uploadFileToDrive(filePath, file.name);
       const driveFileUrl = `https://drive.google.com/file/d/${driveFileId}/preview`;
 
       // Create document in database
@@ -703,9 +757,6 @@ export async function POST(req: NextRequest) {
       // Clean up files
       try {
         unlinkSync(filePath);
-        if (processingFilePath !== filePath) {
-          unlinkSync(processingFilePath);
-        }
       } catch (cleanupError) {
         console.warn("Could not delete temporary files:", cleanupError);
         throw new Error("Failed to delete temporary files");

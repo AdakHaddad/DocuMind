@@ -16,7 +16,7 @@ export default function DocumentUploader({
   onUpload,
   isOpen,
   onClose,
-  allowedFileTypes = [".pdf", ".jpeg", ".png", ".bmp", ".tiff", ".gif"],
+  allowedFileTypes = [".pdf", ".jpeg", ".png", ".bmp", ".tiff", ".gif", ".docx", ".pptx", ".xlsx", ".xlsm", ".ppt"],
 
 }: DocumentUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
