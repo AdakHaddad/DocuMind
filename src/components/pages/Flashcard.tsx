@@ -25,7 +25,6 @@ const Flashcard = ({
 
   const handleBackFromReport = () => setCurrentState(STATE_ANSWER);
   const handleReportSubmit = () => {
-    console.log("Report submitted:", reportReason);
     setCurrentState(STATE_QUESTION);
   };
 

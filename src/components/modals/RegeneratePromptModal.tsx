@@ -13,7 +13,6 @@ const RegeneratePromptModal: React.FC<IRegeneratePromptModal> = ({
 
   const handleRegenerate = () => {
     // Logic to handle the regeneration with the prompt
-    console.log("Regenerating with prompt:", prompt);
     // Clear the input after regeneration
     setPrompt("");
     // Close the modal

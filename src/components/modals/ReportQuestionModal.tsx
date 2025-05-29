@@ -15,8 +15,6 @@ const ReportQuestionModal: React.FC<ReportQuestionModalProps> = ({
 
   const handleReport = () => {
     // Logic to handle reporting the question with the provided details
-    console.log("Reporting question:", question);
-    console.log("Report details:", report);
     // Clear the input after reporting
     setReport("");
     // Call the onSubmit function to notify the parent component

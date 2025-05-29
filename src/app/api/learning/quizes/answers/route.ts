@@ -117,7 +117,6 @@ export async function POST(req: NextRequest) {
 
       // Ask DeepSeek for explanations
       const explanation = await deepseekAsk([message]);
-      console.log(explanation);
 
       // Assign explanations to results
       if (explanation && explanation.content) {
@@ -174,7 +173,7 @@ export async function POST(req: NextRequest) {
       };
       // Ask DeepSeek for evaluations
       const evaluation = await deepseekAsk([message]);
-      console.log(evaluation);
+
       // Assign evaluations to results
       if (evaluation && evaluation.content) {
         const evaluationLines = evaluation.content.split("\n"); // Assuming evaluations are returned line by line
