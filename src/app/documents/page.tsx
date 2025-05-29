@@ -1,10 +1,9 @@
 "use client";
 import React, { useState } from "react";
 
-import DocumentUploader from "../../components/documentUploader";
-import { FileText, Loader2 } from "lucide-react";
-import Link from "next/link";
-
+// import DocumentUploader from "../../components/documentUploader";
+// import { FileText, Loader2 } from "lucide-react";
+// import Link from "next/link";
 
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -220,12 +219,10 @@ export default function Documents() {
       {/* Footer */}
       <footer className="bg-[#4a90e2] py-4 px-6 flex justify-center items-center">
         <button
-
           className="bg-white text-documind-text-primary text-lg px-6 py-2 rounded-md font-bold hover:bg-gray-200 hover:cursor-pointer transition-colors shadow-lg"
-          onClick={() => setIsUploadModalOpen(true)}
-
+          // onClick={() => setIsUploadModalOpen(true)}
         >
-        Upload New Document
+          Upload New Document
         </button>
       </footer>
 

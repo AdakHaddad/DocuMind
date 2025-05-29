@@ -1,6 +1,5 @@
 // src/app/api/auth/signup/route.ts
 import { NextRequest, NextResponse } from "next/server"; // Use NextRequest and NextResponse
-
 import { connectToDatabase } from "@/src/lib/mongodb"; // Modify based on your db connection function
 import bcrypt from "bcryptjs";
 
