@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import ReportQuestionModal from "../modals/ReportQuestionModal";
 import RegeneratePromptModal from "../modals/RegeneratePromptModal";
 import AIRoomChatModal from "../modals/AIRoomChatModal";
+import StatisticsPage from "../Statistics";
 
 const MODE_MULTIPLE = "multiple";
 const MODE_ESSAY = "essay";
@@ -73,8 +74,12 @@ export default function Questions() {
     setShowConversationModal(true);
   };
 
+  const primaryButtonClasses = `border-3 border-[#4a90e2] bg-[#4a90e2] text-white text-lg px-6 py-2 rounded-md font-bold hover:bg-[#3a80d2] hover:border-[#3a80d2] transition-colors hover:cursor-pointer shadow-md`;
+  const secondaryButtonClasses = `border-3 border-[#4a90e2] bg-white text-[#3a80d2] text-lg  px-6 py-2 rounded-md font-bold hover:bg-gray-400 hover:border-gray-400 hover:text-white transition-colors cursor-pointer shadow-md`;
+  const tertiaryButtonClasses = `border-3 border-[#F5A623] bg-[#F5A623] text-white text-lg px-6 py-2 rounded-md font-bold hover:bg-gray-400 hover:bg-orange-400 hover:border-orange-400 transition-colors cursor-pointer shadow-md`;
+
   return (
-    <div className="flex flex-col p-4 gap-4 items-center">
+    <div className="flex flex-col max-w-screen lg:w-90/100 py-6 px-8 gap-4 rounded-md items-center shadow-[-2px_2px_10px_0px_rgba(0,0,0,0.3)]">
       {showRegenerateModal && (
         <RegeneratePromptModal
           onClose={() => {
@@ -93,25 +98,25 @@ export default function Questions() {
       )}
 
       {/* Mode Switch */}
-      <div className="flex gap-2">
+      <div className="flex gap-4 w-full justify-start">
         <button
           onClick={() => setActiveTab(MODE_MULTIPLE)}
           disabled={showResults}
-          className={`px-3 py-1 rounded-md font-medium ${
+          className={`px-6 py-2 rounded-md font-medium text-lg ${
             activeTab === MODE_MULTIPLE
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200 text-gray-700"
+              ? "ring-2 ring-[#4a90e2] bg-[#4a90e2] text-white"
+              : "ring-2 ring-gray-400 text-gray-400 hover:bg-gray-400 hover:ring-gray-400 hover:text-white cursor-pointer transition-colors"
           }`}
         >
-          Multiple Choice
+          Multiple Choices
         </button>
         <button
           onClick={() => setActiveTab(MODE_ESSAY)}
           disabled={showResults}
-          className={`px-3 py-1 rounded-md font-medium ${
+          className={`px-6 py-2 rounded-md font-medium text-lg ${
             activeTab === MODE_ESSAY
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200 text-gray-700"
+              ? "ring-2 ring-[#4a90e2] bg-[#4a90e2] text-white"
+              : "ring-2 ring-gray-400 text-gray-400 hover:bg-gray-400 hover:ring-gray-400 hover:text-white cursor-pointer transition-colors"
           }`}
         >
           Essay
@@ -119,22 +124,22 @@ export default function Questions() {
       </div>
 
       {/* Main Body */}
-      <div className="flex gap-6 w-full max-w-7xl">
+      <div className="flex gap-10 w-full justify-around">
         {/* Left: Questions */}
-        <div className="flex-1 space-y-4">
+        <div className="border-2 border-gray-300 bg-gray-100 rounded-xl p-3 flex-1 overflow-y-auto max-h-123 max-w-2/3 space-y-6">
           {questions.map((q, index) => (
-            <div key={index} className="border-b pb-2 text-sm space-y-1">
-              <div className="flex justify-between items-start">
+            <div key={index} className="pb-2 text-lg">
+              <div className="flex justify-between pb-3 items-center">
                 <h3 className="font-semibold">{q.question}</h3>
                 {!showResults && (
                   <button
                     onClick={() => handleFlag(q.question)}
-                    className="text-red-500 text-xs flex items-center"
+                    className="text-black px-3 py-2 rounded-md text-sm flex items-center bg-documind-secondary font-bold hover:bg-red-400 cursor-pointer transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-1"
-                      fill="currentColor"
+                      className="h-6 w-6"
+                      fill="black"
                       viewBox="0 0 20 20"
                     >
                       <path d="M2 2h2v16H2V2zm2.5 0h6l-1 2H5.5L8 8h5l-1 2H6.5l2 4H8l-2-4H2V2h2.5z" />
@@ -145,25 +150,27 @@ export default function Questions() {
               </div>
 
               {showResults ? (
-                <div className="space-y-1">
-                  <p>Your Answer: {q.userAnswer}</p>
+                <div className="">                  
                   <p>
-                    Result:{" "}
                     <span
                       className={
-                        q.isCorrect ? "text-green-600" : "text-red-600"
+                        q.isCorrect ? "text-green-600 font-medium" : "text-red-600 font-medium"
                       }
                     >
-                      {q.isCorrect ? "Correct" : "Wrong"}
+                      {q.isCorrect ? "Your Answer is Correct" : "Your Answer is Wrong"}
                     </span>
                   </p>
-                  <p>Correct Answer: {q.correctAnswer}</p>
-                  <p className="text-gray-600">Explanation: {q.explanation}</p>
+                  <p className="font-medium">Your Answer:</p>
+                  <p className="mb-2">{q.userAnswer}</p>
+                  <p className="font-medium">Correct Answer:</p>
+                  <p className="mb-2">{q.correctAnswer}</p>
+                  <p className="font-medium">Explanation:</p>
+                  <p className="mb-2">{q.explanation}</p>
                   <button
                     onClick={() =>
                       handleStartChat("Explain more: " + q.question)
                     }
-                    className="mt-1 px-3 py-1 rounded-md text-xs bg-blue-500 text-white hover:bg-blue-600"
+                    className={`border-1 border-[#4a90e2] bg-[#4a90e2] text-white text-base px-3 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] transition-colors hover:cursor-pointer shadow-md`}
                   >
                     Start a Conversation
                   </button>
@@ -179,47 +186,43 @@ export default function Questions() {
                 </div>
               ) : (
                 <textarea
-                  className="w-full border border-gray-300 rounded-md p-1"
+                  className="w-full border border-gray-300 rounded-md p-2 font-normal"
                   placeholder="Type your answer..."
                   rows={3}
                 />
               )}
               {!showResults && (
-                <p className="text-gray-500 text-xs">Hint: {q.hint}</p>
+                <p className="text-gray-500 text-sm font-medium">Hint: {q.hint}</p>
               )}
             </div>
           ))}
         </div>
 
         {/* Right: Stats or Progress */}
-        <div className="w-1/3 space-y-3 text-sm">
+        <div className="w-1/3 h-fit px-5 py-2 space-y-3 text-sm ring-4 rounded-md ring-documind-primary">
           {showResults ? (
-            <>
-              <h4 className="font-semibold">Your Statistics</h4>
-              <div>
-                <span>Accuracy: 80%</span>
-                <div className="h-2 bg-blue-200 rounded mt-1 w-4/5" />
-              </div>
-              <div>
-                <span>Time Spent: 50s</span>
-                <div className="h-2 bg-blue-200 rounded mt-1 w-1/2" />
-              </div>
-              <h4 className="font-semibold mt-4">Learn More About:</h4>
-              <ul className="list-disc pl-5">
-                <li>Lorem Ipsum Definition</li>
-                <li>History of Lorem Ipsum</li>
-                <li>Directions of Lorem Ipsum</li>
-              </ul>
-            </>
+            <div className="flex justify-center items-center">
+              <StatisticsPage />
+            </div>
           ) : (
             <>
-              <h4 className="font-semibold">Your Progress</h4>
-              <div className="flex justify-between">
-                <span>Attempt: 1/10</span>
-                <span>Elapsed: 45s</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Answered: 8/10</span>
+              <h4 className="text-3xl text-documind-text-primary font-bold">
+                <span className="text-documind-text-primary">Your </span>
+                <span className="text-documind-primary">Progress</span>
+              </h4>
+              <div className="text-lg mb-2 text-documind-text-primary font-bold flex justify-between">
+                <span className="bg-blue-100 p-2 mr-4 w-1/3 text-center rounded-full shadow-[-2px_2px_6px_0px_rgba(0,0,0,0.3)]">
+                Attempt  
+                <span className="text-documind-primary">     1/10</span>
+                </span>
+                <span className="bg-blue-100 p-2 mr-4 w-1/3 text-center rounded-full shadow-[-2px_2px_6px_0px_rgba(0,0,0,0.3)]">
+                Answered
+                <span className="text-documind-primary">     1/10</span>
+                </span>
+                <span className="bg-blue-100 p-2 w-1/3 text-center rounded-full shadow-[-2px_2px_6px_0px_rgba(0,0,0,0.3)]">
+                Elapsed
+                <span className="text-documind-primary">     45s</span>
+                </span>
               </div>
             </>
           )}
@@ -230,17 +233,17 @@ export default function Questions() {
       <div className="flex gap-3 mt-6">
         <button
           onClick={() => setShowRegenerateModal(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className={`${primaryButtonClasses}`}
         >
           Regenerate
         </button>
         <button
           onClick={() => setShowResults(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className={tertiaryButtonClasses}
         >
           Check All
         </button>
-        <button className="bg-white border border-blue-500 text-blue-500 px-4 py-2 rounded-md hover:bg-blue-100">
+        <button className={secondaryButtonClasses}>
           Save Questions
         </button>
       </div>

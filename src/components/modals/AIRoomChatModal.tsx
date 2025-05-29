@@ -76,14 +76,14 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
         show ? "" : "hidden"
       }`}
     >
-      <div className="bg-white rounded-lg border-2 border-blue-400 w-[50%] h-[75%] flex flex-col justify-between p-4 shadow-xl">
+      <div className="bg-white rounded-lg ring-3 ring-blue-400 w-[60%] h-[75%] flex flex-col justify-between p-4 shadow-xl">
         {/* Header */}
-        <div className="text-center font-semibold text-blue-700">
+        <div className="text-center pb-2 text-xl font-bold text-documind-primary">
           AI Room Chat
         </div>
 
         {/* Chat Area */}
-        <div className="flex flex-col gap-2 flex-grow overflow-y-auto my-2">
+        <div className="ring-2 flex flex-col p-3 gap-2 flex-grow overflow-y-auto my-2 space-y-2 rounded-lg">
           {chats.map((chat, index) => (
             <div
               key={index}
@@ -92,10 +92,10 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
               }`}
             >
               <div
-                className={`p-2 rounded-md text-sm ${
+                className={`p-2 break-all rounded-md text-base ${
                   chat.sender === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-800"
+                    ? "bg-documind-primary text-white font-medium"
+                    : "bg-gray-200 text-gray-700 font-medium"
                 }`}
               >
                 {chat.message}
@@ -105,11 +105,11 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
         </div>
 
         {/* Input Area */}
-        <div className="flex items-center gap-2 border-t pt-2">
+        <div className="flex items-center gap-3 pt-2">
           <input
             type="text"
-            placeholder="Make the conversation with AI..."
-            className="flex-grow px-3 py-1 rounded-md border border-gray-300 text-sm focus:outline-none"
+            placeholder="Make conversation with AI..."
+            className="flex-grow h-[100%] px-3 py-1 rounded-md ring-2 ring-gray-300 text-base focus:ring-gray-700"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -120,7 +120,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
             }}
           />
           <button
-            className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600"
+            className="bg-documind-primary font-medium text-white px-4 py-2 rounded-md text-lg hover:bg-[#3a80d2]"
             onClick={() => {
               handleSendMessage(inputMessage);
               setInputMessage("");
@@ -129,7 +129,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
             Send
           </button>
           <button
-            className="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600"
+            className="bg-documind-secondary font-medium text-white px-4 py-2 rounded-md text-lg hover:bg-orange-500"
             onClick={handleClose}
           >
             Close

@@ -102,7 +102,7 @@ const SignUp = () => {
   return (
     <ModalTemplate
       content={
-        <div className="flex flex-col items-center justify-center mb-2">
+        <div className="flex flex-col w-[400px] items-center justify-center mb-2">
           <h1 className="text-5xl mb-3 font-bold font-inter">
             <span className="text-documind-text-primary">Docu</span>
             <span className="text-documind-primary">Mind</span>
@@ -116,7 +116,7 @@ const SignUp = () => {
         </div>
       }
       subcontent={
-        <div className="flex flex-col gap-1 w-full">
+        <div className="flex flex-col w-[25em] gap-1 w-full">
           <form onSubmit={handleSubmit(onSubmit)} className="w-full">
             <Input
               className="mb-2"
@@ -172,7 +172,7 @@ const SignUp = () => {
 
             {errorMessage && <p className="text-red-500">{errorMessage}</p>}
 
-            <div className="flex gap-4 mt-4">
+            <div className="flex gap-4 mt-4 justify-center">
               <Button size="sm" type="submit">
                 Sign Up
               </Button>

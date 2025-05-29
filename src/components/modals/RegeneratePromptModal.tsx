@@ -21,9 +21,9 @@ const RegeneratePromptModal: React.FC<IRegeneratePromptModal> = ({
 
   return (
     <div className="flex items-center justify-center w-full h-full bg-black/40 z-[1] fixed top-0 left-0">
-      <div className="bg-white rounded-lg border-2 border-blue-400 w-[400px] p-4 shadow-xl flex flex-col items-center justify-center">
+      <div className="bg-white rounded-lg border-4 border-blue-400 w-[600px] h-max-[75%] p-4 shadow-xl flex flex-col items-center justify-center">
         {/* Header */}
-        <div className="text-center font-semibold text-blue-700 mb-4">
+        <div className="text-center text-documind-primary text-2xl font-semibold mb-4">
           Regenerate Prompt
         </div>
 
@@ -32,12 +32,12 @@ const RegeneratePromptModal: React.FC<IRegeneratePromptModal> = ({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Give your detailed regenerate prompt if exist, or just leave this empty"
-          className="w-full h-24 p-2 border border-gray-300 rounded-md focus:outline-none mb-4"
+          className="w-full h-24 p-2 text-documind-text-secondary font-medium border-2 border-gray-300 rounded-md focus:outline-none mb-4"
         />
 
         {/* Regenerate Button */}
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className="bg-[#4a90e2] text-white font-medium px-4 py-2 rounded-md hover:bg-[#3a80d2]"
           onClick={handleRegenerate}
         >
           Regenerate

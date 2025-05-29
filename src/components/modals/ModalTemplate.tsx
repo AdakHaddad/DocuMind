@@ -19,7 +19,7 @@ const ModalTemplate = ({
     <div className="flex flex-col items-center justify-center text-black">
       <div
         className={
-          "flex flex-col items-center justify-center gap-[1.5vw] shadow-[-4px_4px_6px_0px_rgba(0,0,0,0.3)] " +
+          "flex flex-col w-auto items-center justify-center gap-[1.5vw] shadow-[-4px_4px_6px_0px_rgba(0,0,0,0.3)] " +
           (containerClass
             ? containerClass
             : "bg-documind-bg rounded-[2vw] p-[3vw]")

@@ -5,7 +5,7 @@ import React from "react";
 
 const QuestionsPage = () => {
   return (
-    <div className="flex flex-col w-full h-full items-center justify-center relative">
+    <div className="flex flex-col w-full max-h-screen items-center justify-center relative">
       <Questions />
     </div>
   );
