@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server"; // Use NextRequest and NextResponse
 import { connectToDatabase } from "@/src/lib/mongodb"; // Modify based on your db connection function
 import { ObjectId } from "mongodb";
+import { GetSession } from "../../auth/session/route";
+import { User } from "../../auth/[...nextauth]/route";
 
 // Define an interface for the request body
 interface DocumentRequest {
@@ -14,8 +16,13 @@ export interface SingleReport {
   report: string;
 }
 
-interface DocumentObject extends DocumentRequest {
+interface DocumentObject {
+  title: string;
+  slug: string; // Unique slug for the document
+  owner: string; // Owner's slug
+  content: string;
   summary: string;
+  access: "public" | "private";
   reports: SingleReport[];
   createdAt?: Date; // Optional timestamp field
   updatedAt?: Date; // Optional timestamp field
@@ -37,11 +44,54 @@ export async function POST(req: NextRequest) {
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
 
+    // Get user data
+    const userSession = await GetSession(req);
+
+    if (!userSession) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = userSession as User; // Ensure user is typed correctly
+
+    if (!user.slug) {
+      return NextResponse.json(
+        { error: "User slug is required" },
+        { status: 400 }
+      );
+    }
+
+    // Slugify title
+    let slugifiedTitle = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    let existingSlug = true;
+    while (existingSlug) {
+      // Find if slugifiedUsername already exists
+      const docWithSlug = await documentsCollection.findOne({
+        slug: slugifiedTitle
+      });
+
+      if (!docWithSlug) {
+        existingSlug = false; // Slug is unique, exit loop
+      } else {
+        // Cut off the last part of the slug if it exists
+        slugifiedTitle = slugifiedTitle.replace(/-\d+$/, "");
+
+        // If slug exists, append a number to make it unique
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        slugifiedTitle = `${slugifiedTitle}-${randomSuffix}`;
+      }
+    }
+
     // Create new document object
     const newDocument: DocumentObject = {
       title,
+      slug: slugifiedTitle,
+      owner: user.slug,
       content,
       summary: "",
+      access: "private", // Default access type
       reports: [], // Initialize with an empty array
       createdAt: new Date(), // Optional: add a timestamp
       updatedAt: new Date() // Optional: add a timestamp
@@ -54,10 +104,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         id: result.insertedId.toString(),
-        title: newDocument.title,
-        content: newDocument.content,
-        summary: newDocument.summary,
-        reports: newDocument.reports
+        ...newDocument
       } as DocumentObject,
       { status: 201 }
     );
@@ -183,6 +230,45 @@ export async function PATCH(req: NextRequest) {
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
 
+    // Reject if title is the same as current
+    const existingDocument = await documentsCollection.findOne({
+      _id: new ObjectId(id)
+    });
+    if (!existingDocument) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+    if (existingDocument.title === title) {
+      return NextResponse.json(
+        { error: "Title is the same as current" },
+        { status: 400 }
+      );
+    }
+
+    // Generate the slug
+    let slugifiedTitle = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    let existingSlug = true;
+    while (existingSlug) {
+      // Find if slugifiedTitle already exists
+      const docWithSlug = await documentsCollection.findOne({
+        slug: slugifiedTitle
+      });
+      if (!docWithSlug) {
+        existingSlug = false; // Slug is unique, exit loop
+      } else {
+        // Cut off the last part of the slug if it exists
+        slugifiedTitle = slugifiedTitle.replace(/-\d+$/, "");
+        // If slug exists, append a number to make it unique
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        slugifiedTitle = `${slugifiedTitle}-${randomSuffix}`;
+      }
+    }
+
     // Update the document title
     const result = await documentsCollection.updateOne(
       { _id: new ObjectId(id) },
@@ -191,7 +277,7 @@ export async function PATCH(req: NextRequest) {
 
     if (result.matchedCount === 0) {
       return NextResponse.json(
-        { error: "Document not found" },
+        { error: "Failed to rename the document." },
         { status: 404 }
       );
     }

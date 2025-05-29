@@ -16,7 +16,7 @@ export default function Flashcards() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center">
+    <div className="flex flex-col max-h-screen items-center justify-center">
       <div className={showRegenerateModal ? "" : "hidden"}>
         <RegeneratePromptModal
           onClose={() => {
@@ -25,7 +25,7 @@ export default function Flashcards() {
         />
       </div>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+      <div className="max-w-7xl max-h-screen mx-auto bg-white rounded-2xl p-8 shadow-[-2px_3px_10px_0px_rgba(0,0,0,0.3)]">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  place-items-center gap-6 ">
           {/* FLASHCARDS */}
           <Flashcard
@@ -65,11 +65,11 @@ export default function Flashcards() {
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
             onClick={handleRegenerateModal}
-            className="border-3 border-[#4a90e2] bg-[#4a90e2] text-white px-6 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] transition-colors shadow-md"
+            className="border-3 border-[#4a90e2] bg-[#4a90e2] text-white px-6 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] hover:cursor-pointer transition-colors shadow-md"
           >
             Regenerate
           </button>
-          <button className="border-3 border-[#4a90e2] bg-white text-[#3a80d2] px-6 py-2 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white transition-colors shadow-md">
+          <button className="border-3 border-[#4a90e2] bg-white text-[#3a80d2] px-6 py-2 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white hover:cursor-pointer transition-colors shadow-md">
             Save Flash Cards
           </button>
         </div>

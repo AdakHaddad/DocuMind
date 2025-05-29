@@ -1,6 +1,5 @@
 // src/app/api/auth/signup/route.ts
 import { NextRequest, NextResponse } from "next/server"; // Use NextRequest and NextResponse
-
 import { connectToDatabase } from "@/src/lib/mongodb"; // Modify based on your db connection function
 import bcrypt from "bcryptjs";
 
@@ -28,13 +27,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Slugify username
+    let slugifiedUsername = username
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    let existingSlug = true;
+    while (existingSlug) {
+      // Find if slugifiedUsername already exists
+      const userWithSlug = await usersCollection.findOne({
+        slug: slugifiedUsername
+      });
+
+      if (!userWithSlug) {
+        existingSlug = false; // Slug is unique, exit loop
+      } else {
+        // Cut off the last part of the slug if it exists
+        slugifiedUsername = slugifiedUsername.replace(/-\d+$/, "");
+
+        // If slug exists, append a number to make it unique
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        slugifiedUsername = `${slugifiedUsername}-${randomSuffix}`;
+      }
+    }
+
     // Hash password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = {
       email,
       password: hashedPassword,
-      username
+      username,
+      slug: slugifiedUsername
     };
 
     // Insert the new user into the database
@@ -45,7 +69,8 @@ export async function POST(req: NextRequest) {
       {
         id: result.insertedId.toString(),
         email: newUser.email,
-        username: newUser.username
+        username: newUser.username,
+        slug: newUser.slug
       },
       { status: 201 }
     );

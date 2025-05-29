@@ -67,10 +67,7 @@ const Home = () => {
             <Button className="mb-2" size="sm" onClick={handleSignIn}>
               Sign In
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSignUp}
-              variant="outline"
+            <Button size="sm" onClick={handleSignUp} variant="outline"
             >
               Sign Up
             </Button>

@@ -56,18 +56,20 @@ export default function PDFViewPage() {
     setIsAIRoomOpen(true)
   }
 
+  const primaryButtonClasses = `border-3 border-[#4a90e2] bg-[#4a90e2] text-white px-4 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] hover:cursor-pointer transition-colors shadow-md`;
+
   return (
-    <div className="flex flex-col h-screen items-center justify-center">
+    <div className="flex flex-col max-h-screen items-center justify-center">
 
       {/* Main Content */}
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col md:flex-row gap-6">
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl p-6 flex flex-col md:flex-row gap-6 shadow-[-3px_2px_10px_0px_rgba(0,0,0,0.3)]">
           {/* PDF Content */}
           <div className="flex-1 flex flex-col">
             <div className="flex items-start mb-4">
-              <p className="text-gray-700 text-sm">Prompted by. ZackyKey</p>
+              <p className="text-gray-700 text-md font-medium">Prompted by. ZackyKey</p>
               <button 
                 onClick={handleShare}
-                className="ml-auto bg-[#4a90e2] text-white px-4 py-1 rounded-md hover:bg-[#3a80d2] transition-colors flex items-center gap-1"
+                className={`ml-auto gap-3 rounded-md hover:bg-[#3a80d2] flex items-center ${primaryButtonClasses}`}
               >
                 <Share2 size={16} />
                 Share
@@ -80,13 +82,13 @@ export default function PDFViewPage() {
               
               {/* PDF content */}
               <div className="flex-1 p-6 bg-gray-100">
-                <h2 className="text-2xl font-medium text-center mb-4">What is Lorem Ipsum?</h2>
+                <h2 className="text-2xl font-bold text-center mb-4">What is Lorem Ipsum?</h2>
                 <div className="flex gap-6">
                   <div className="border border-gray-300 p-2 w-[150px] h-[150px] flex items-center justify-center">
                     <Image className="text-gray-400" size={40} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-gray-800">
+                    <p className="text-gray-800 text-lg">
                       Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
                     </p>
                   </div>
@@ -99,22 +101,22 @@ export default function PDFViewPage() {
           </div>
           
           {/* Right Sidebar */}
-          <div className="w-full md:w-[300px] bg-white rounded-lg p-4">
+          <div className="w-full md:w-[300px] bg-white rounded-lg p-4 shadow-[-2px_2px_6px_0px_rgba(0,0,0,0.3)]">
             <div className="mb-6">
               <h3 className="text-xl font-bold mb-3">Key Summary</h3>
               <ol className="list-decimal pl-5 space-y-1">
                 {keySummaryPoints.map((point, index) => (
-                  <li key={index} className="text-gray-700">{point}</li>
+                  <li key={index} className="text-gray-700 font-medium">{point}</li>
                 ))}
               </ol>
             </div>
             
-            {/* <button 
-              onClick={handleAskSomething}
-              className="w-full bg-[#4a90e2] text-white py-2 rounded-md hover:bg-[#3a80d2] transition-colors"
+            <button 
+              // onClick={handleAskSomething}
+              className={`w-full rounded-md transition-colors ${primaryButtonClasses}`}
             >
               Ask Something
-            </button> */}
+            </button>
           </div>
         </div>
 

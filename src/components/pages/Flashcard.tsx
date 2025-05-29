@@ -25,13 +25,12 @@ const Flashcard = ({
 
   const handleBackFromReport = () => setCurrentState(STATE_ANSWER);
   const handleReportSubmit = () => {
-    console.log("Report submitted:", reportReason);
     setCurrentState(STATE_QUESTION);
   };
 
   // --- Dynamic Card Styling ---
   let cardContainerClasses =
-    "p-6 rounded-xl flex flex-col justify-between min-h-[250px] w-full max-w-sm";
+    "p-4 rounded-xl flex flex-col justify-between min-h-[250px] w-full max-w-sm";
   let currentTextColorClass = "text-text-on-blue"; // Default text color
 
   if (currentState === STATE_QUESTION) {
@@ -46,9 +45,9 @@ const Flashcard = ({
   }
   // --- End Dynamic Card Styling ---
 
-  const buttonBaseClasses = "py-2 px-4 rounded-md font-semibold text-sm";
+  const buttonBaseClasses = "py-2 px-4 rounded-md font-semibold hover:cursor-pointer text-sm";
   const primaryButtonClasses = `${buttonBaseClasses} bg-[#4a90e2] hover:bg-[#3a80d2] text-white`;
-  const secondaryButtonClasses = `${buttonBaseClasses} bg-[#F5A623] hover:bg-orange-500 text-white`;
+  const secondaryButtonClasses = `${buttonBaseClasses} bg-[#F5A623] hover:bg-orange-400 text-white`;
   const tertiaryButtonClasses = `${buttonBaseClasses} border-3 border-white bg-white text-gray-700 hover:bg-gray-400 hover:border-gray-400 hover:text-white`;
   const askButtonClasses = `${buttonBaseClasses} border-3 border-[#F5A623] bg-white text-[#F5A623] hover:bg-gray-400 hover:border-gray-400 hover:text-white`;
 

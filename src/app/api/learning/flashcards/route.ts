@@ -171,3 +171,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const documentId = searchParams.get("docsId");
+
+  // Validate required fields
+  if (!documentId) {
+    return NextResponse.json(
+      { error: "Missing required field: documentId" },
+      { status: 400 }
+    );
+  }
+
+  // Validate ObjectId format
+  if (!ObjectId.isValid(documentId)) {
+    return NextResponse.json(
+      { error: "Invalid document ID format" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = await connectToDatabase();
+    const flashcardsCollection = db.collection("flashcards");
+
+    // Fetch the flashcards by document ID
+    const objectId = new ObjectId(documentId);
+    const flashcards = await flashcardsCollection.findOne({
+      documentId: objectId
+    });
+
+    if (!flashcards) {
+      return NextResponse.json(
+        { error: "Flashcards not found" },
+        { status: 404 }
+      );
+    }
+
+    // Respond with the found flashcards
+    return NextResponse.json(flashcards, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching flashcards:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}

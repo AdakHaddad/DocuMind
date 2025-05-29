@@ -30,13 +30,13 @@ export default function InsideFooter() {
 
   return (
     <Footer>
-      <div className="flex gap-2">
+      <div className="flex gap-4 py-1">
         {navigations.map((nav, index) => (
           <ModalTemplate
             key={index}
             content={
               <button
-                className="text-xl font-bold font-inter w-fit h-fit cursor-pointer outline-none"
+                className="text-xl py-1 font-bold font-inter w-fit h-fit outline-none cursor-pointer"
                 onClick={() => router.push(nav.route[0])}
               >
                 <span className="text-documind-text-primary">{nav.title}</span>
@@ -46,7 +46,7 @@ export default function InsideFooter() {
               "w-fit rounded-[.4vw] px-[.6vw] leading-none py-[.2vw] " +
               (nav.route.includes(pathname)
                 ? "bg-documind-secondary"
-                : "bg-documind-bg")
+                : "bg-documind-bg hover:bg-gray-200")
             }
           />
         ))}
