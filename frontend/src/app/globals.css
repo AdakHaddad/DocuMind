@@ -1,0 +1,45 @@
+/* globals.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Open+Sans:wght@400;700&display=swap");
+
+@import "tailwindcss";
+/* Tailwind CSS Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Base Layer */
+@layer base {
+  :root {
+    --color-documind-primary: #4a90e2;
+    --color-documind-secondary: #f5a623;
+    --color-documind-bg: #f7f9fc;
+    --color-documind-card-bg: #ffffff;
+    --color-documind-text-primary: #333333;
+    --color-documind-text-secondary: #666666;
+    --color-documind-success: #2ecc71;
+    --color-documind-error: #e74c3c;
+  }
+}
+
+/* Custom Components Layer */
+@layer components {
+  .bg-documind {
+    background-color: var(--color-documind-bg);
+  }
+
+  .text-documind-primary {
+    color: var(--color-documind-text-primary);
+  }
+}
+
+/* Extra Styling */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-end-rgb));
+}

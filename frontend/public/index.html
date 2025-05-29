@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Processing with LangChain-Docling</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+
+        .upload-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #007bff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .metadata {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .content-preview {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔬 Document Processing with LangChain-Docling</h1>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Drag and drop your document here or click to select</p>
+            <p style="color: #666; font-size: 14px;">Supported formats: PDF, Word, Excel, Text files (Max: 50MB)</p>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <button class="upload-btn" id="uploadBtn" onclick="uploadFile()" disabled>
+                Process Document
+            </button>
+        </div>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            selectedFile = e.target.files[0];
+            updateUploadArea();
+        });
+
+        // Drag and drop handling
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            selectedFile = e.dataTransfer.files[0];
+            updateUploadArea();
+        });
+
+        function updateUploadArea() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            if (selectedFile) {
+                uploadArea.innerHTML = `
+                    <p>📄 Selected: ${selectedFile.name}</p>
+                    <p style="color: #666;">Size: ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Choose Different File
+                    </button>
+                    <button class="upload-btn" id="uploadBtn" onclick="uploadFile()">
+                        Process Document
+                    </button>
+                `;
+            }
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('document', selectedFile);
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            const result = document.getElementById('result');
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Processing...';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showResult('success', data);
+                } else {
+                    showResult('error', data);
+                }
+            } catch (error) {
+                showResult('error', { error: 'Network error', details: error.message });
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Process Document';
+                progress.style.display = 'none';
+                progressBar.style.width = '0%';
+            }
+        }
+
+        function showResult(type, data) {
+            const result = document.getElementById('result');
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+
+            if (type === 'success') {
+                result.innerHTML = `
+                    <h3>✅ Document Processed Successfully!</h3>
+                    <div class="metadata">
+                        <h4>📋 Metadata:</h4>
+                        <p><strong>Original Filename:</strong> ${data.data.filename}</p>
+                        <p><strong>Processing Time:</strong> ${data.data.metadata.processing_time}</p>
+                        <p><strong>Total Pages:</strong> ${data.data.metadata.total_pages || 'N/A'}</p>
+                        <p><strong>Processed At:</strong> ${data.data.metadata.processed_at}</p>
+                    </div>
+                    <div class="content-preview">
+                        <h4>📄 Content Preview (First 1000 characters):</h4>
+                        ${data.data.content.substring(0, 1000)}${data.data.content.length > 1000 ? '...' : ''}
+                    </div>
+                `;
+            } else {
+                result.innerHTML = `
+                    <h3>❌ Processing Failed</h3>
+                    <p><strong>Error:</strong> ${data.error}</p>
+                    ${data.details ? `<p><strong>Details:</strong> ${data.details}</p>` : ''}
+                `;
+            }
+        }
+
+        // Health check on page load
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Service status:', data);
+            })
+            .catch(error => {
+                console.error('Service health check failed:', error);
+            });
+    </script>
+</body>
+
+</html>
