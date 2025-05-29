@@ -4,6 +4,8 @@ import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { deepseekAsk, Messages } from "@/src/app/api/deepseekLogic";
 import { SingleReport } from "../documents/route";
+import { GetSession } from "@/src/app/api/auth/session/route";
+import { User } from "@/src/app/api/auth/[...nextauth]/route";
 
 // Flashcard interface
 interface Flashcard {
@@ -18,8 +20,35 @@ interface FlashcardRequest {
   regeneratePrompt?: string;
 }
 
+// Define interfaces for type safety
+interface FlashcardSet {
+  _id?: ObjectId;
+  documentId: string;
+  flashcards: Flashcard[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // POST method for creating flashcards from a document
 export async function POST(req: NextRequest) {
+  try {
+    // Get user session
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const user = userSession as User;
+    if (!user.slug) {
+      return NextResponse.json(
+        { error: "User profile incomplete" },
+        { status: 400 }
+      );
+    }
+
   const { documentId, count, regeneratePrompt }: FlashcardRequest =
     await req.json();
 
@@ -51,18 +80,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
+    // Verify document exists and user has access
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
-
-    // Fetch the document by ID
-    const objectId = new ObjectId(documentId);
-    const document = await documentsCollection.findOne({ _id: objectId });
+    const document = await documentsCollection.findOne({
+      _id: new ObjectId(documentId)
+    });
 
     if (!document) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
+      );
+    }
+
+    if (document.owner !== user.slug && document.access !== "public") {
+      return NextResponse.json(
+        { error: "Access denied to this document" },
+        { status: 403 }
       );
     }
 
@@ -106,7 +141,7 @@ export async function POST(req: NextRequest) {
       // Fetch previous flashcards to provide context
       const flashcardsCollection = db.collection("flashcards");
       const previousFlashcards = await flashcardsCollection.findOne({
-        documentId: objectId
+        documentId: new ObjectId(documentId)
       });
 
       if (previousFlashcards && previousFlashcards.flashcards) {
@@ -140,79 +175,225 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Add flashcards object into the collection as a single object
     const flashcardsCollection = db.collection("flashcards");
-    const flashcardObject = {
-      documentId: objectId,
-      flashcards: flashcards,
+
+    // Check if flashcards already exist for this document
+    const existingFlashcards = await flashcardsCollection.findOne({
+      documentId
+    });
+
+    if (existingFlashcards) {
+      // Update existing flashcards
+      const result = await flashcardsCollection.updateOne(
+        { documentId },
+        {
+          $set: {
+            flashcards,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      return NextResponse.json({
+        message: "Flashcards updated successfully",
+        _id: existingFlashcards._id,
+        documentId,
+        flashcards,
+        updatedAt: new Date()
+      });
+    } else {
+      // Create new flashcard set
+      const newFlashcardSet: FlashcardSet = {
+        documentId,
+        flashcards,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    // Insert the flashcards into the database
-    const result = await flashcardsCollection.insertOne(flashcardObject);
-    if (!result) {
-      return NextResponse.json(
-        { error: "Failed to create flashcards" },
-        { status: 500 }
-      );
+      const result = await flashcardsCollection.insertOne(newFlashcardSet);
+
+      return NextResponse.json({
+        message: "Flashcards created successfully",
+        _id: result.insertedId,
+        ...newFlashcardSet
+      }, { status: 201 });
     }
-
-    // Remove the previous flashcards if they exist (remove all with the same documentId but different _id)
-    await flashcardsCollection.deleteMany({
-      documentId: objectId,
-      _id: { $ne: result.insertedId }
-    });
-
-    // Respond with the generated flashcards
-    return NextResponse.json(flashcards, { status: 200 });
   } catch (error) {
-    console.error("Error creating flashcards:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("Error creating/updating flashcards:", error);
+    return NextResponse.json(
+      { 
+        error: "Failed to create/update flashcards",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
+      { status: 500 }
+    );
   }
 }
 
+// GET endpoint to retrieve flashcards for a document
 export async function GET(req: NextRequest) {
+  try {
   const { searchParams } = new URL(req.url);
-  const documentId = searchParams.get("docsId");
+    const docId = searchParams.get("docId");
 
-  // Validate required fields
-  if (!documentId) {
+    if (!docId) {
     return NextResponse.json(
-      { error: "Missing required field: documentId" },
+        { error: "Missing document ID" },
       { status: 400 }
     );
   }
 
-  // Validate ObjectId format
-  if (!ObjectId.isValid(documentId)) {
+    if (!ObjectId.isValid(docId)) {
     return NextResponse.json(
       { error: "Invalid document ID format" },
       { status: 400 }
     );
   }
 
-  try {
+    // Get user session
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const db = await connectToDatabase();
     const flashcardsCollection = db.collection("flashcards");
 
-    // Fetch the flashcards by document ID
-    const objectId = new ObjectId(documentId);
-    const flashcards = await flashcardsCollection.findOne({
-      documentId: objectId
+    // Find flashcards for the document
+    const flashcardSet = await flashcardsCollection.findOne({
+      documentId: docId
     });
 
-    if (!flashcards) {
+    if (!flashcardSet) {
       return NextResponse.json(
-        { error: "Flashcards not found" },
+        { error: "No flashcards found for this document" },
         { status: 404 }
       );
     }
 
-    // Respond with the found flashcards
-    return NextResponse.json(flashcards, { status: 200 });
+    return NextResponse.json(flashcardSet);
   } catch (error) {
     console.error("Error fetching flashcards:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch flashcards" },
+      { status: 500 }
+    );
   }
 }
+
+// PUT endpoint to update flashcards
+export async function PUT(req: NextRequest) {
+  try {
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const flashcardId = searchParams.get("id");
+
+    if (!flashcardId || !ObjectId.isValid(flashcardId)) {
+      return NextResponse.json(
+        { error: "Invalid flashcard set ID" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+    const { flashcards } = body;
+
+    if (!flashcards || !Array.isArray(flashcards)) {
+      return NextResponse.json(
+        { error: "Invalid flashcards data" },
+        { status: 400 }
+      );
+    }
+
+    const db = await connectToDatabase();
+    const flashcardsCollection = db.collection("flashcards");
+
+    const result = await flashcardsCollection.updateOne(
+      { _id: new ObjectId(flashcardId) },
+      {
+        $set: {
+          flashcards,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: "Flashcard set not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: "Flashcards updated successfully",
+      _id: flashcardId,
+      flashcards,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error("Error updating flashcards:", error);
+    return NextResponse.json(
+      { error: "Failed to update flashcards" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE endpoint to remove flashcards
+export async function DELETE(req: NextRequest) {
+  try {
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const flashcardId = searchParams.get("id");
+
+    if (!flashcardId || !ObjectId.isValid(flashcardId)) {
+      return NextResponse.json(
+        { error: "Invalid flashcard set ID" },
+        { status: 400 }
+      );
+    }
+
+    const db = await connectToDatabase();
+    const flashcardsCollection = db.collection("flashcards");
+
+    const result = await flashcardsCollection.deleteOne({
+      _id: new ObjectId(flashcardId)
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: "Flashcard set not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: "Flashcards deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting flashcards:", error);
+    return NextResponse.json(
+      { error: "Failed to delete flashcards" },
+      { status: 500 }
+    );
+  }
+}
+
