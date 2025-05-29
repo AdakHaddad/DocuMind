@@ -16,7 +16,8 @@ export default function DocumentUploader({
   onUpload,
   isOpen,
   onClose,
-  allowedFileTypes = [".pdf"],
+  allowedFileTypes = [".pdf", ".jpeg", ".png", ".bmp", ".tiff", ".gif"],
+
 }: DocumentUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
