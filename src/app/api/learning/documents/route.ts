@@ -819,6 +819,19 @@ export async function GET(req: NextRequest) {
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
 
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = userSession as User; // Ensure user is typed correctly
+    if (!user.slug) {
+      return NextResponse.json(
+        { error: "User slug is required" },
+        { status: 400 }
+      );
+    }
+
     if (id) {
       // Fetch document by ID
       const document = await documentsCollection.findOne({
@@ -830,10 +843,25 @@ export async function GET(req: NextRequest) {
           { status: 404 }
         );
       }
+      // if the document is private, check if the user is the owner
+      if (document.access === "private" && document.owner !== user.slug) {
+        return NextResponse.json(
+          { error: "Access denied to this document" },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json(document, { status: 200 });
     } else {
-      // Fetch all documents
-      const documents = await documentsCollection.find({}).toArray();
+      // Fetch all documents that the user has access to
+      const documents = await documentsCollection
+        .find({
+          $or: [
+            { access: "public" },
+            { owner: user.slug } // Include documents owned by the user
+          ]
+        })
+        .toArray();
       return NextResponse.json(documents, { status: 200 });
     }
   } catch (error) {
