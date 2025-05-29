@@ -33,6 +33,7 @@ interface DocumentObject {
   summary: string;
   access: "public" | "private";
   reports: SingleReport[];
+  driveFileUrl?: string; // Google Drive file URL
   createdAt?: Date; // Optional timestamp field
   updatedAt?: Date; // Optional timestamp field
 }
@@ -546,7 +547,6 @@ function extractContent(document: any): { text: string; metadata: any } {
 
 // POST method for creating a new document
 export async function POST(req: NextRequest) {
-    try {
     const contentType = req.headers.get("content-type");
     if (!contentType) {
       return NextResponse.json({
@@ -556,202 +556,117 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle file upload case
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get("file") as File | null;
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
 
-      if (!file) {
-        return NextResponse.json({ 
-          error: "No file provided",
-          details: "Please ensure you're sending a file in the form data with the key 'file'"
-        }, { status: 400 });
-      }
-
-      // File validation
-      const fileSize = file.size;
-      if (fileSize === 0) {
-        return NextResponse.json({ 
-          error: "File is empty",
-          details: "The uploaded file has no content"
-        }, { status: 400 });
-      }
-
-      const maxSize = 20 * 1024 * 1024; // 20MB limit
-      if (fileSize > maxSize) {
-        return NextResponse.json({
-          error: "File too large",
-          details: `Maximum size is ${maxSize / 1024 / 1024}MB, got ${fileSize / 1024 / 1024}MB`
-        }, { status: 400 });
-      }
-
-      // Get user session
-      const userSession = await GetSession(req);
-      if (!userSession) {
-        return NextResponse.json({ 
-          error: "Unauthorized",
-          details: "You must be logged in to upload documents"
-        }, { status: 401 });
-      }
-
-      const user = userSession as User;
-      if (!user.slug) {
-        return NextResponse.json({
-          error: "User slug is required",
-          details: "Your user account is missing required profile information"
-        }, { status: 400 });
-      }
-
-      // Process the file
-      const uniqueFilename = generateUniqueFilename(file.name);
-      const uploadDir = path.join(process.cwd(), "uploads");
-      const processedDir = path.join(process.cwd(), "processed");
-
-      await mkdir(uploadDir, { recursive: true });
-      await mkdir(processedDir, { recursive: true });
-
-      const filePath = path.join(uploadDir, uniqueFilename);
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
-
-      try {
-        // Convert to PDF if needed
-        const supportedTypes = [
-          "application/pdf",
-          "image/jpeg",
-          "image/png",
-          "image/bmp",
-          "image/tiff",
-          "image/gif",
-        ];
-
-        let processingFilePath = filePath;
-        let processingMimeType = file.type;
-
-        if (!supportedTypes.includes(file.type)) {
-          const tempFilePath = path.join(
-            uploadDir,
-            `${path.basename(uniqueFilename, path.extname(uniqueFilename))}.pdf`
-          );
-          const converted = await convertToPdf(filePath, tempFilePath);
-          if (!converted) {
-            throw new Error("Failed to convert file to PDF");
-          }
-          processingFilePath = tempFilePath;
-          processingMimeType = "application/pdf";
-        }
-
-        // Process with Document AI
-        const document = await processDocumentWithGcp(
-          processingFilePath,
-          processingMimeType
-        );
-
-        // Extract content
-        const { text: extractedText, metadata } = extractContent(document);
-        if (!extractedText) {
-          throw new Error("Failed to extract text from document");
-        }
-
-        // Create document in database
-        const db = await connectToDatabase();
-        const documentsCollection = db.collection("documents");
-
-        const title = formData.get("title") as string || file.name;
-        let slugifiedTitle = title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-
-        // Ensure unique slug
-        let existingSlug = true;
-        while (existingSlug) {
-          const docWithSlug = await documentsCollection.findOne({
-            slug: slugifiedTitle
-          });
-
-          if (!docWithSlug) {
-            existingSlug = false;
-          } else {
-            slugifiedTitle = slugifiedTitle.replace(/-\d+$/, "");
-            const randomSuffix = Math.floor(Math.random() * 1000);
-            slugifiedTitle = `${slugifiedTitle}-${randomSuffix}`;
-          }
-        }
-
-        const newDocument = {
-          title,
-          slug: slugifiedTitle,
-          owner: user.slug,
-          content: extractedText,
-          summary: "",
-          access: "private",
-          reports: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        const result = await documentsCollection.insertOne(newDocument);
-
-        // Clean up files
-        try {
-          unlinkSync(filePath);
-          if (processingFilePath !== filePath) {
-            unlinkSync(processingFilePath);
-          }
-        } catch (cleanupError) {
-          console.warn("Could not delete temporary files:", cleanupError);
-        }
-
-        return NextResponse.json({
-          success: true,
-          id: result.insertedId.toString(),
-          ...newDocument
-        }, { status: 201 });
-
-      } catch (error) {
-        console.error("Error processing file:", error);
-        return NextResponse.json({
-          error: "Failed to process file",
-          details: error instanceof Error ? error.message : "Unknown error occurred"
-        }, { status: 500 });
-      }
+    if (!file) {
+      return NextResponse.json({
+        error: "No file provided",
+        details: "Please ensure you're sending a file in the form data with the key 'file'"
+      }, { status: 400 });
     }
 
-    // Handle JSON document creation
+    // File validation
+    const fileSize = file.size;
+    if (fileSize === 0) {
+      return NextResponse.json({
+        error: "File is empty",
+        details: "The uploaded file has no content"
+      }, { status: 400 });
+    }
+
+    const maxSize = 20 * 1024 * 1024; // 20MB limit
+    if (fileSize > maxSize) {
+      return NextResponse.json({
+        error: "File too large",
+        details: `Maximum size is ${maxSize / 1024 / 1024}MB, got ${fileSize / 1024 / 1024}MB`
+      }, { status: 400 });
+    }
+
+    // Get user session
+    const userSession = await GetSession(req);
+    if (!userSession) {
+      return NextResponse.json({
+        error: "Unauthorized",
+        details: "You must be logged in to upload documents"
+      }, { status: 401 });
+    }
+
+    const user = userSession as User;
+    if (!user.slug) {
+      return NextResponse.json({
+        error: "User slug is required",
+        details: "Your user account is missing required profile information"
+      }, { status: 400 });
+    }
+
+    // Process the file
+    const uniqueFilename = generateUniqueFilename(file.name);
+    const uploadDir = path.join(process.cwd(), "uploads");
+    const processedDir = path.join(process.cwd(), "processed");
+
+    await mkdir(uploadDir, { recursive: true });
+    await mkdir(processedDir, { recursive: true });
+
+    const filePath = path.join(uploadDir, uniqueFilename);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(filePath, buffer);
+
     try {
-      const { title, content } = await req.json();
+      // Convert to PDF if needed
+      const supportedTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/bmp",
+        "image/tiff",
+        "image/gif",
+      ];
 
-      if (!title || !content) {
-        return NextResponse.json({
-          error: "Missing required fields",
-          details: {
-            title: title ? "✓" : "✗ Required",
-            content: content ? "✓" : "✗ Required"
-          }
-        }, { status: 400 });
-      }
+      let processingFilePath = filePath;
+      let processingMimeType = file.type;
 
-      const userSession = await GetSession(req);
-      if (!userSession) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      const user = userSession as User;
-      if (!user.slug) {
-        return NextResponse.json(
-          { error: "User slug is required" },
-          { status: 400 }
+      if (!supportedTypes.includes(file.type)) {
+        const tempFilePath = path.join(
+          uploadDir,
+          `${path.basename(uniqueFilename, path.extname(uniqueFilename))}.pdf`
         );
+        const converted = await convertToPdf(filePath, tempFilePath);
+        if (!converted) {
+          throw new Error("Failed to convert file to PDF");
+        }
+        processingFilePath = tempFilePath;
+        processingMimeType = "application/pdf";
       }
 
+      // Process with Document AI
+      const document = await processDocumentWithGcp(
+        processingFilePath,
+        processingMimeType
+      );
+
+      // Extract content
+      const { text: extractedText, metadata } = extractContent(document);
+      if (!extractedText) {
+        throw new Error("Failed to extract text from document");
+      }
+
+      // Upload to Google Drive and get file URL
+      const driveFileId = await uploadFileToDrive(processingFilePath, file.name);
+      const driveFileUrl = `https://drive.google.com/file/d/${driveFileId}/preview`;
+
+      // Create document in database
       const db = await connectToDatabase();
       const documentsCollection = db.collection("documents");
 
+      const title = formData.get("title") as string || file.name;
       let slugifiedTitle = title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
 
+      // Ensure unique slug
       let existingSlug = true;
       while (existingSlug) {
         const docWithSlug = await documentsCollection.findOne({
@@ -771,35 +686,40 @@ export async function POST(req: NextRequest) {
         title,
         slug: slugifiedTitle,
         owner: user.slug,
-        content,
+        content: extractedText,
         summary: "",
         access: "private",
         reports: [],
+        driveFileUrl,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
       const result = await documentsCollection.insertOne(newDocument);
+      if (!result.insertedId) {
+        throw new Error("Failed to insert document into database");
+      }
 
-      return NextResponse.json({
-        id: result.insertedId.toString(),
-        ...newDocument
-      }, { status: 201 });
+      // Clean up files
+      try {
+        unlinkSync(filePath);
+        if (processingFilePath !== filePath) {
+          unlinkSync(processingFilePath);
+        }
+      } catch (cleanupError) {
+        console.warn("Could not delete temporary files:", cleanupError);
+        throw new Error("Failed to delete temporary files");
+      }
+
+      return NextResponse.json(newDocument, { status: 201 });
 
     } catch (error) {
-      console.error("Error parsing JSON:", error);
+      console.error("Error processing file:", error);
       return NextResponse.json({
-        error: "Invalid request body",
-        details: "Expected JSON with title and content fields"
-      }, { status: 400 });
+        error: "Failed to process file",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
+      }, { status: 500 });
     }
-
-  } catch (error) {
-    console.error("Error in POST handler:", error);
-    return NextResponse.json({
-      error: "Server error",
-      details: error instanceof Error ? error.message : "Unknown error occurred"
-    }, { status: 500 });
   }
 }
 
