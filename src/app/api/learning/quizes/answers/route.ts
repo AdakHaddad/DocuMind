@@ -23,7 +23,148 @@ interface Result {
   explanation: string;
 }
 
+// GET method for getting an existing answer session by quizesId
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const quizesId = searchParams.get("quizesId");
+
+  if (!quizesId) {
+    return NextResponse.json(
+      { error: "Missing required field: quizesId" },
+      { status: 400 }
+    );
+  }
+
+  // Validate ObjectId format
+  if (!ObjectId.isValid(quizesId)) {
+    return NextResponse.json(
+      { error: "Invalid answers ID format" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = await connectToDatabase();
+    const answersCollection = db.collection("answers");
+
+    // Check if answers already exist for the given quizesId
+    const existingAnswers = await answersCollection.findOne({
+      quizesId: quizesId
+    });
+
+    if (!existingAnswers) {
+      return NextResponse.json(
+        { error: "Answers not found for the given quizesId" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(existingAnswers, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching answers:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+// PATCH method for updating an existing answer session with a new attempt
+export async function PATCH(req: NextRequest) {
+  const { quizesId } = await req.json();
+  if (!quizesId) {
+    return NextResponse.json(
+      { error: "Missing required field: quizesId" },
+      { status: 400 }
+    );
+  }
+  // Validate ObjectId format
+  if (!ObjectId.isValid(quizesId)) {
+    return NextResponse.json(
+      { error: "Invalid answers ID format" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = await connectToDatabase();
+    const answersCollection = db.collection("answers");
+
+    // Check if answers already exist for the given quizesId
+    const existingAnswers = await answersCollection.findOne({
+      quizesId: quizesId
+    });
+
+    // Create a new answers document
+    const newAttempt = {
+      correct: null,
+      incorrect: null,
+      accuracy: null,
+      timeSpent: null,
+      timeStart: new Date(),
+      timeEnd: null // Will be updated when the user finishes the quiz
+    };
+
+    if (!existingAnswers) {
+      const newAnswers = {
+        quizesId: quizesId,
+        attempts: [newAttempt],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Insert the new answers document
+      const result = await answersCollection.insertOne(newAnswers);
+      if (!result) {
+        return NextResponse.json(
+          { error: "Failed to create new answers session" },
+          { status: 500 }
+        );
+      }
+      // Return the new answers ID
+      return NextResponse.json({ newAnswers }, { status: 201 });
+    }
+
+    // Check if previous attempts not yet done by checking the timeEnd
+    const lastAttempt = existingAnswers.attempts?.slice(-1)[0];
+    if (lastAttempt && !lastAttempt.timeEnd) {
+      return NextResponse.json(
+        { error: "Previous attempt is still in progress" },
+        { status: 400 }
+      );
+    }
+
+    // Get previous attempts to check if there are any
+    const previousAttempts = existingAnswers.attempts || [];
+
+    // Update the existing answers document with a new attempt
+    const updatedAnswers = {
+      ...existingAnswers,
+      attempts: [...previousAttempts, newAttempt],
+      updatedAt: new Date()
+    };
+
+    // Insert the new answers document
+    const result = await answersCollection.updateOne(
+      { quizesId: quizesId },
+      { $set: updatedAnswers }
+    );
+
+    if (!result) {
+      return NextResponse.json(
+        { error: "Failed to update answers session" },
+        { status: 500 }
+      );
+    }
+
+    // Return the new answers ID
+    return NextResponse.json({ updatedAnswers }, { status: 201 });
+  } catch (error) {
+    console.error("Error fetching answers:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+// POST method for submitting quiz answers
 export async function POST(req: NextRequest) {
+  const timeEnd = new Date();
   const { quizesId, quizType, answers }: AnswerRequest = await req.json();
 
   // Validate required fields
@@ -74,21 +215,54 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Review the answers by providing the question, the user's answer, the correct answer, the explanation, and the boolean correct/not for both multiple and essay
+    // Update the answers document with the results
+    const answersCollection = db.collection("answers");
 
-    if (quizType === "multiple") {
-      const results: Result[] = quizes.quizes.map(
-        (quiz: Quiz, index: number) => {
-          const userAnswer = answers[index];
-          const isCorrect = userAnswer === quiz.answer;
-          return {
-            question: quiz.question,
-            userAnswer,
-            correctAnswer: quiz.answer,
-            isCorrect
-          } as Result;
-        }
+    // Find the existing answers document by quizesId
+    const existingAnswers = await answersCollection.findOne({
+      quizesId: quizesId
+    });
+    if (!existingAnswers) {
+      return NextResponse.json(
+        { error: "Answers not provided for the given quizesId" },
+        { status: 404 }
       );
+    }
+
+    // Get latest attempt
+    const latestAttempt = existingAnswers.attempts?.slice(-1)[0];
+    if (!latestAttempt) {
+      return NextResponse.json(
+        { error: "No previous attempt found" },
+        { status: 404 }
+      );
+    }
+
+    // if latest attempt is already completed by the existence of timeEnd, then reject
+    if (latestAttempt.timeEnd) {
+      return NextResponse.json(
+        { error: "Previous attempt is already completed" },
+        { status: 400 }
+      );
+    }
+
+    const timeStart = new Date(latestAttempt.timeStart);
+    // count timeSpent from timeEnd to timeStart
+    const timeSpent = (timeEnd.getTime() - timeStart.getTime()) / 1000; // Time spent in seconds
+
+    // Review the answers by providing the question, the user's answer, the correct answer, the explanation, and the boolean correct/not for both multiple and essay
+    let results: Result[] = [];
+    if (quizType === "multiple") {
+      results = quizes.quizes.map((quiz: Quiz, index: number) => {
+        const userAnswer = answers[index];
+        const isCorrect = userAnswer === quiz.answer;
+        return {
+          question: quiz.question,
+          userAnswer,
+          correctAnswer: quiz.answer,
+          isCorrect
+        } as Result;
+      });
 
       // Create a single message for DeepSeek with all questions and answers
       const content = results
@@ -131,22 +305,18 @@ export async function POST(req: NextRequest) {
           result.explanation = "No explanation provided.";
         });
       }
-
-      return NextResponse.json(results, { status: 200 });
     } else if (quizType === "essay") {
       // For essay type, we will ask DeepSeek to evaluate the essay answers but still return correct / incorrect
-      const results: Result[] = quizes.quizes.map(
-        (quiz: Quiz, index: number) => {
-          const userAnswer = answers[index];
-          return {
-            question: quiz.question,
-            userAnswer,
-            correctAnswer: quiz.answer, // Assuming the answer is the expected content for essay
-            isCorrect: false, // Will be determined by DeepSeek
-            explanation: ""
-          } as Result;
-        }
-      );
+      results = quizes.quizes.map((quiz: Quiz, index: number) => {
+        const userAnswer = answers[index];
+        return {
+          question: quiz.question,
+          userAnswer,
+          correctAnswer: quiz.answer, // Assuming the answer is the expected content for essay
+          isCorrect: false, // Will be determined by DeepSeek
+          explanation: ""
+        } as Result;
+      });
       // Create a single message for DeepSeek with all questions and answers
       const content = results
         .map(
@@ -189,8 +359,47 @@ export async function POST(req: NextRequest) {
           result.explanation = "No evaluation provided.";
         });
       }
-      return NextResponse.json(results, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: "Invalid quiz type. Must be 'multiple' or 'essay'" },
+        { status: 400 }
+      );
     }
+
+    // Count correct and incorrect answers
+    const correctCount = results.filter((result) => result.isCorrect).length;
+    const incorrectCount = results.length - correctCount;
+    // Calculate accuracy
+    const accuracy = (correctCount / results.length) * 100;
+    const updatedAttempt = {
+      correct: correctCount,
+      incorrect: incorrectCount,
+      accuracy: accuracy.toFixed(2),
+      timeSpent: timeSpent.toFixed(2),
+      timeStart: timeStart,
+      timeEnd: timeEnd
+    };
+
+    // Previous attempts
+    const previousAttempts = existingAnswers.attempts.slice(0, -1) || [];
+
+    await answersCollection.updateOne(
+      { quizesId: quizesId },
+      {
+        $set: {
+          attempts: [...previousAttempts, updatedAttempt],
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    return NextResponse.json(
+      {
+        results,
+        statistics: updatedAttempt
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error processing quiz answers:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

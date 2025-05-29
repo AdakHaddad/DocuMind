@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const documentId = searchParams.get("id");
+  const documentId = searchParams.get("docsId");
 
   // Validate required fields
   if (!documentId) {
@@ -210,7 +210,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Respond with the found flashcards
-    return NextResponse.json(flashcards.flashcards, { status: 200 });
+    return NextResponse.json(flashcards, { status: 200 });
   } catch (error) {
     console.error("Error fetching flashcards:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
