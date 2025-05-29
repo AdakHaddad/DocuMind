@@ -2,7 +2,7 @@
 
 import Footer from "@/src/components/Footer";
 import ModalTemplate from "@/src/components/modals/ModalTemplate";
-import { overview, flashcards, quiz } from "@/src/utils/routes";
+import { flashcards, quiz } from "@/src/utils/routes";
 import { usePathname, useRouter } from "next/navigation";
 
 export default function InsideFooter() {
@@ -16,7 +16,7 @@ export default function InsideFooter() {
   const navigations: Navigation[] = [
     {
       title: "Overview",
-      route: [overview]
+      route: ["*"]
     },
     {
       title: "Flashcards",
@@ -44,7 +44,7 @@ export default function InsideFooter() {
             }
             containerClass={
               "w-fit rounded-[.4vw] px-[.6vw] leading-none py-[.2vw] " +
-              (nav.route.includes(pathname)
+              (nav.route.includes(pathname) || nav.route.includes("*")
                 ? "bg-documind-secondary"
                 : "bg-documind-bg hover:bg-gray-200")
             }

@@ -2,29 +2,31 @@
 
 import { useState, useRef } from "react";
 import { Check, Copy } from "lucide-react";
+import { DocumentObject } from "@/src/app/[user]/page";
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  documentName: string;
-  documentId: string;
+  document: DocumentObject;
 }
 
 export default function ShareModal({
   isOpen,
   onClose,
-  // documentName,
-  documentId
+  document
 }: ShareModalProps) {
-  const [accessType, setAccessType] = useState<"public" | "private">("public");
+  const [accessType, setAccessType] = useState<"public" | "private">(
+    document.access
+  );
   const [copied, setCopied] = useState(false);
   const linkRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
-  const shareLink = `https://documind.web.id/${documentId
-    .toLowerCase()
-    .replace(/\s+/g, "-")}`;
+  // get current domain
+  const domain = window.location.origin;
+
+  const shareLink = `${domain}/${document.owner}/${document.slug}`;
 
   const handleCopy = () => {
     if (linkRef.current) {
@@ -35,8 +37,16 @@ export default function ShareModal({
     }
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     // Here you would implement the logic to save the access settings
+    await fetch(`/api/learning/documents/access?documentId=${document._id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ access: accessType })
+    });
+    document.access = accessType; // Update the document object with the new access type
     onClose();
   };
 
@@ -65,15 +75,15 @@ export default function ShareModal({
         <div className="p-6 space-y-4">
           {/* Access Type */}
           <div className="flex items-center gap-3">
-
-            <span className="font-medium text-gray-700 min-w-[100px]">Access Type:</span>
+            <span className="font-medium text-gray-700 min-w-[100px]">
+              Access Type:
+            </span>
             <div className="flex rounded-md overflow-hidden border-2 border-[#4a90e2]">
               <button
                 className={`px-4 py-1 ${
-                  accessType === "public" 
-                    ? "bg-[#4a90e2] text-white font-medium" 
+                  accessType === "public"
+                    ? "bg-[#4a90e2] text-white font-medium"
                     : "bg-white text-gray-700 hover:bg-gray-200 hover:cursor-pointer font-medium"
-
                 }`}
                 onClick={() => setAccessType("public")}
               >
@@ -81,11 +91,9 @@ export default function ShareModal({
               </button>
               <button
                 className={`px-4 py-1 ${
-
-                  accessType === "private" 
-                    ? "bg-[#4a90e2] text-white font-medium" 
+                  accessType === "private"
+                    ? "bg-[#4a90e2] text-white font-medium"
                     : "bg-white text-gray-700 hover:bg-gray-200 hover:cursor-pointer font-medium"
-
                 }`}
                 onClick={() => setAccessType("private")}
               >

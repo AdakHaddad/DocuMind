@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
         hostname: "**" // Allow all hostnames
       }
     ]
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push("canvas"); // Ignore 'canvas' on server build
+    }
+    return config;
   }
 };
 
