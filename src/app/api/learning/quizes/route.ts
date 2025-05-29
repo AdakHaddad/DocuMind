@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
 // GET quizes by document ID
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const documentId = searchParams.get("id");
+  const documentId = searchParams.get("docsId");
 
   // Validate required fields
   if (!documentId) {
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Respond with the found quizes
-    return NextResponse.json(quizes.quizes, { status: 200 });
+    return NextResponse.json(quizes, { status: 200 });
   } catch (error) {
     console.error("Error fetching quizes:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

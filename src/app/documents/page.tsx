@@ -1,109 +1,111 @@
 "use client";
 import React, { useState } from "react";
+
 import DocumentUploader from "../../components/documentUploader";
 import { FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 
+
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  // const [isUploading, setIsUploading] = useState(false);
+  // const [uploadProgress, setUploadProgress] = useState(0);
+  // const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
+  // const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Handle document upload and call the API
-  const handleDocumentUploaded = async (files: File[]) => {
-    setIsUploading(true);
-    setUploadError(null);
-    setUploadProgress(0);
-    
-    // Process each file
-    for (const file of files) {
-      const startTime = Date.now();
-      // Add document card immediately with loading state
-      const tempDoc = {
-        documentName: file.name,
-        fileSize: file.size,
-        processedAt: new Date().toISOString(),
-        processingTime: 'Processing...',
-        status: 'processing'
-      };
-      setUploadedDocs((prev) => [tempDoc, ...prev]);
+  // const handleDocumentUploaded = async (files: File[]) => {
+  //   // setIsUploading(true);
+  //   // setUploadError(null);
+  //   // setUploadProgress(0);
 
-      try {
-        // Create form data
-        const formData = new FormData();
-        formData.append('file', file);
+  //   // Process each file
+  //   for (const file of files) {
+  //     // const startTime = Date.now();
+  //     // Add document card immediately with loading state
+  //     // const tempDoc = {
+  //     //   documentName: file.name,
+  //     //   fileSize: file.size,
+  //     //   processedAt: new Date().toISOString(),
+  //     //   processingTime: 'Processing...',
+  //     //   status: 'processing'
+  //     // };
+  //     // setUploadedDocs((prev) => [tempDoc, ...prev]);
 
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          setUploadProgress(prev => {
-            if (prev >= 90) {
-              clearInterval(progressInterval);
-              return prev;
-            }
-            return prev + 10;
-          });
-        }, 1000);
+  //     try {
+  //       // Create form data
+  //       const formData = new FormData();
+  //       formData.append("file", file);
 
-        // Upload and process the file
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+  //       // Simulate upload progress
+  //       const progressInterval = setInterval(() => {
+  //         // setUploadProgress(prev => {
+  //         //   if (prev >= 90) {
+  //         //     clearInterval(progressInterval);
+  //         //     return prev;
+  //         //   }
+  //         //   return prev + 10;
+  //         // });
+  //       }, 1000);
 
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
-        }
+  //       // Upload and process the file
+  //       const response = await fetch("/api/upload", {
+  //         method: "POST",
+  //         body: formData
+  //       });
 
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to process document');
-        }
+  //       if (!response.ok) {
+  //         throw new Error(`Upload failed: ${response.statusText}`);
+  //       }
 
-        // Update the document with processed data
-        setUploadedDocs((prev) => prev.map(doc => 
-          doc.documentName === file.name 
-            ? {
-                ...doc,
-                processedData: result.processedData,
-                processingTime: result.processedData.metadata.processing_time,
-                pipelineOptions: result.processedData.metadata.pipeline_options,
-                status: 'completed'
-              }
-            : doc
-        ));
-        
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-        setIsUploadModalOpen(false);
-        setIsUploading(false);
-        setUploadProgress(0);
-      } catch (error) {
-        // Update the document with error state
-        setUploadedDocs((prev) => prev.map(doc => 
-          doc.documentName === file.name 
-            ? {
-                ...doc,
-                processingTime: 'Failed',
-                status: 'error',
-                error: (error as Error).message
-              }
-            : doc
-        ));
-        setUploadError('Error processing file: ' + (error as Error).message);
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
-    }
-  };
+  //       const result = await response.json();
+
+  //       if (!result.success) {
+  //         throw new Error(result.error || "Failed to process document");
+  //       }
+
+  //       // Update the document with processed data
+  //       // setUploadedDocs((prev) => prev.map(doc =>
+  //       //   doc.documentName === file.name
+  //       //     ? {
+  //       //         ...doc,
+  //       //         processedData: result.processedData,
+  //       //         processingTime: result.processedData.metadata.processing_time,
+  //       //         pipelineOptions: result.processedData.metadata.pipeline_options,
+  //       //         status: 'completed'
+  //       //       }
+  //       //     : doc
+  //       // ));
+
+  //       clearInterval(progressInterval);
+  //       // setUploadProgress(100);
+  //       setIsUploadModalOpen(false);
+  //       // setIsUploading(false);
+  //       // setUploadProgress(0);
+  //     } catch (error) {
+  //       // Update the document with error state
+  //       // setUploadedDocs((prev) => prev.map(doc =>
+  //       //   doc.documentName === file.name
+  //       //     ? {
+  //       //         ...doc,
+  //       //         processingTime: 'Failed',
+  //       //         status: 'error',
+  //       //         error: (error as Error).message
+  //       //       }
+  //       //     : doc
+  //       // ));
+  //       setUploadError("Error processing file: " + (error as Error).message);
+  //       // setIsUploading(false);
+  //       // setUploadProgress(0);
+  //     }
+  //   }
+  // };
 
   // Filter documents by search query
-  const filteredDocs = uploadedDocs.filter((doc) =>
-    doc.documentName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // const filteredDocs = uploadedDocs.filter((doc) =>
+  //   doc.documentName?.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   return (
     <>
@@ -137,6 +139,7 @@ export default function Documents() {
           </div>
 
           {/* Document Grid */}
+          {/*
           {filteredDocs.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
               <FileText className="mx-auto w-16 h-16 mb-4 text-documind-primary" />
@@ -207,29 +210,31 @@ export default function Documents() {
               </div>
             ))}
           </div>
-          )}
-          {uploadError && (
+          )}*/}
+          {/* {uploadError && (
             <div className="text-red-600 text-center mt-4">{uploadError}</div>
-          )}
+          )} */}
         </div>
       </main>
 
       {/* Footer */}
       <footer className="bg-[#4a90e2] py-4 px-6 flex justify-center items-center">
         <button
+
           className="bg-white text-documind-text-primary text-lg px-6 py-2 rounded-md font-bold hover:bg-gray-200 hover:cursor-pointer transition-colors shadow-lg"
           onClick={() => setIsUploadModalOpen(true)}
+
         >
         Upload New Document
         </button>
       </footer>
 
       {/* Document Uploader Modal */}
-      <DocumentUploader 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        onUpload={handleDocumentUploaded} 
-      />
+      {/* <DocumentUploader
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUpload={handleDocumentUploaded}
+      /> */}
     </>
   );
 }
