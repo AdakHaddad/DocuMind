@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server"; // Use NextRequest and NextResponse
 import { connectToDatabase } from "@/src/lib/mongodb"; // Modify based on your db connection function
 import { ObjectId } from "mongodb";
+import { GetSession } from "../../auth/session/route";
+import { User } from "../../auth/[...nextauth]/route";
 
 // Define an interface for the request body
 interface DocumentRequest {
@@ -17,6 +19,7 @@ export interface SingleReport {
 interface DocumentObject {
   title: string;
   slug: string; // Unique slug for the document
+  owner: string; // Owner's slug
   content: string;
   summary: string;
   access: "public" | "private";
@@ -40,6 +43,22 @@ export async function POST(req: NextRequest) {
   try {
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
+
+    // Get user data
+    const userSession = await GetSession(req);
+
+    if (!userSession) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = userSession as User; // Ensure user is typed correctly
+
+    if (!user.slug) {
+      return NextResponse.json(
+        { error: "User slug is required" },
+        { status: 400 }
+      );
+    }
 
     // Slugify title
     let slugifiedTitle = title
@@ -69,6 +88,7 @@ export async function POST(req: NextRequest) {
     const newDocument: DocumentObject = {
       title,
       slug: slugifiedTitle,
+      owner: user.slug,
       content,
       summary: "",
       access: "private", // Default access type

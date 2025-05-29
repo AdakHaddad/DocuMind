@@ -7,13 +7,29 @@ import { encode, getToken } from "next-auth/jwt";
 
 const secret = process.env.NEXTAUTH_SECRET || "";
 
-export async function GET(req: NextRequest) {
+export async function GetSession(req: NextRequest) {
+  // Do not return as NextResponse
   try {
     // Get the token from the cookie (or Authorization header)
     const token = await getToken({ req, secret });
 
     if (token && token.user) {
-      return NextResponse.json(token.user, { status: 200 });
+      return token.user;
+    } else {
+      return null; // Not authenticated
+    }
+  } catch (error) {
+    console.error("Error checking session:", error);
+    return null; // Server error
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    // Get the token from the cookie (or Authorization header)
+    const user = await GetSession(req);
+    if (user) {
+      return NextResponse.json(user, { status: 200 });
     } else {
       return NextResponse.json(
         { error: "You are not authenticated" },
