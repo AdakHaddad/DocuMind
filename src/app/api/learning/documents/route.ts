@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { GetSession } from "../../auth/session/route";
+import { getSession } from "../../auth/session/route";
 import { User } from "../../auth/[...nextauth]/route";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { unlinkSync, existsSync } from "fs";
@@ -575,7 +575,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user session
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json(
         {
@@ -712,7 +712,7 @@ export async function GET(req: NextRequest) {
     const db = await connectToDatabase();
     const documentsCollection = db.collection("documents");
 
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

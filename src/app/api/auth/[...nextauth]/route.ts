@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { SignInUser } from "@/src/app/api/auth/session/route";
+import { SignInUser } from "../session/helper";
 
 export interface User {
   id: string;

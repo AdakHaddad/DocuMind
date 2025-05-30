@@ -4,7 +4,7 @@ import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { deepseekAsk, Messages } from "@/src/app/api/deepseekLogic";
 import { SingleReport } from "../documents/route";
-import { GetSession } from "@/src/app/api/auth/session/route";
+import { getSession } from "@/src/app/api/auth/session/route";
 import { User } from "@/src/app/api/auth/[...nextauth]/route";
 
 // Flashcard interface
@@ -33,7 +33,7 @@ interface FlashcardSet {
 export async function POST(req: NextRequest) {
   try {
     // Get user session
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -251,7 +251,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get user session
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
 // PUT endpoint to update flashcards
 export async function PUT(req: NextRequest) {
   try {
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -347,7 +347,7 @@ export async function PUT(req: NextRequest) {
 // DELETE endpoint to remove flashcards
 export async function DELETE(req: NextRequest) {
   try {
-    const userSession = await GetSession(req);
+    const userSession = await getSession(req);
     if (!userSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
