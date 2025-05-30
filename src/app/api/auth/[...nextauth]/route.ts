@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { SignInUser } from "../session/helper";
+import { validateEnv } from "@/src/lib/env";
 
 export interface User {
   id: string;
@@ -8,6 +9,9 @@ export interface User {
   email?: string | null;
   slug?: string | null;
 }
+
+// Validate environment variables
+validateEnv();
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -35,7 +39,11 @@ const authOptions: NextAuthOptions = {
     signOut: "/signout"
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60 // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60 // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
