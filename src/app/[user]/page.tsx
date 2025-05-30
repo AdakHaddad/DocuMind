@@ -91,17 +91,9 @@ export default function Documents() {
           method: "POST",
           body: formData
         });
-
         if (!response.ok) {
           throw new Error(`Upload failed: ${response.statusText}`);
         }
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || "Failed to process document");
-        }
-
         // Refresh the page
         window.location.reload();
       } catch (error) {

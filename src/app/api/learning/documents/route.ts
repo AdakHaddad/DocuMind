@@ -7,14 +7,34 @@ import { User } from "../../auth/[...nextauth]/route";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { unlinkSync, existsSync } from "fs";
 import path from "path";
+import ConvertApi from "convertapi";
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { google } from "googleapis";
 import { Readable } from "stream";
+import { drive_v3 } from "googleapis";
 
-// Import ConvertAPI with CommonJS style for direct usage
-const convertapiJS = require("convertapi");
+// Define an interface for the request body}
 
-// Define an interface for the request body
+interface ConvertApiParams {
+  File: string;
+  StoreFile: boolean;
+  Timeout?: number;
+  PdfResolution?: number;
+}
+
+interface NewDocument {
+  title: string;
+  slug: string;
+  owner: string;
+  content: string;
+  summary: string;
+  access: "private" | "public";
+  reports: SingleReport[];
+  driveFileUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface DocumentRequest {
   title: string;
   content: string;
@@ -165,7 +185,7 @@ async function uploadFileToDrive(
 }
 
 // Helper to get or create the "parsed" folder in Google Drive
-async function getOrCreateParsedFolder(drive: any) {
+async function getOrCreateParsedFolder(drive: drive_v3.Drive): Promise<string> {
   try {
     const folderName = "parsed";
     const folderQuery = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
@@ -180,7 +200,7 @@ async function getOrCreateParsedFolder(drive: any) {
       console.log(
         `Found existing "parsed" folder with ID: ${response.data.files[0].id}`
       );
-      return response.data.files[0].id;
+      return response.data.files[0].id || "";
     }
 
     console.log('Creating "parsed" folder in Google Drive...');
@@ -195,7 +215,7 @@ async function getOrCreateParsedFolder(drive: any) {
     });
 
     console.log(`Created "parsed" folder with ID: ${folder.data.id}`);
-    return folder.data.id;
+    return folder.data.id || "";
   } catch (error) {
     console.error("Error getting/creating Google Drive folder:", error);
     throw new Error(
@@ -205,7 +225,10 @@ async function getOrCreateParsedFolder(drive: any) {
 }
 
 // Convert files to PDF using ConvertAPI with improved error handling
-async function convertToPdf(inputPath: string, outputPath: string) {
+async function convertToPdf(
+  inputPath: string,
+  outputPath: string
+): Promise<boolean> {
   try {
     console.log(`Converting ${inputPath} to PDF...`);
 
@@ -226,7 +249,7 @@ async function convertToPdf(inputPath: string, outputPath: string) {
       console.log("Attempting conversion with CommonJS style ConvertAPI...");
       const convertApiSecret =
         process.env.CONVERT_SECRET || "secret_qt9utZx8jxAHOJqF";
-      const convertapiClient = convertapiJS(convertApiSecret);
+      const convertapiClient = new ConvertApi(convertApiSecret);
 
       // Add retry logic for better reliability
       let retryCount = 0;
@@ -240,7 +263,7 @@ async function convertToPdf(inputPath: string, outputPath: string) {
           }
 
           // Customize parameters based on file type
-          const conversionParams: any = {
+          const conversionParams: ConvertApiParams = {
             File: inputPath,
             StoreFile: true,
             Timeout: 300 // Increased timeout for large files
@@ -263,11 +286,11 @@ async function convertToPdf(inputPath: string, outputPath: string) {
           await result.saveFiles(path.dirname(outputPath));
 
           // Rename the file if needed to match the expected output path
-          const resultFiles = await result.files();
+          const resultFiles = await result.files;
           if (resultFiles && resultFiles.length > 0) {
             const convertedFilePath = path.join(
               path.dirname(outputPath),
-              resultFiles[0].FileName
+              resultFiles[0].fileName
             );
             if (
               convertedFilePath !== outputPath &&
@@ -347,7 +370,13 @@ async function convertToPdf(inputPath: string, outputPath: string) {
 }
 
 // Improved function to process document with Google Cloud Document AI
-async function processDocumentWithGcp(filePath: string, mimeType: string) {
+import { protos } from "@google-cloud/documentai";
+import { ClientOptions } from "google-gax";
+
+async function processDocumentWithGcp(
+  filePath: string,
+  mimeType: string
+): Promise<protos.google.cloud.documentai.v1.IDocument | null | undefined> {
   try {
     console.log("Starting Document AI processing...");
     console.log(`File path: ${filePath}`);
@@ -367,8 +396,13 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
         Processor ID: ${processorId ? "Set" : "Missing"}`);
     }
 
-    let clientOptions: any = {
-      apiEndpoint: `${location}-documentai.googleapis.com`
+    const clientOptions: ClientOptions = {
+      apiEndpoint: `${location}-documentai.googleapis.com`,
+      credentials: {
+        client_email: process.env.SERVICE_EMAIL!,
+        private_key: process.env.SERVICE_KEY!.replace(/\\n/g, "\n")
+      },
+      projectId: process.env.GCP_PROJECT_ID
     };
 
     if (process.env.NODE_ENV !== "production") {
@@ -438,7 +472,7 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
       console.log("No document object in result");
     }
 
-    return result.document;
+    return result.document || null;
   } catch (error) {
     console.error("Error in Document AI processing:", error);
     if (error instanceof Error) {
@@ -455,11 +489,27 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
 }
 
 // Improved function to extract content from Document AI response
-function extractContent(document: any): { text: string; metadata: any } {
+function extractContent(
+  document: protos.google.cloud.documentai.v1.IDocument | null | undefined
+): {
+  text: string;
+  metadata: {
+    pages: number;
+    entities: number;
+    textStyles: number;
+  };
+} {
   console.log("Extracting content from document...");
   if (!document) {
     console.log("No document provided to extractContent");
-    return { text: "", metadata: {} };
+    return {
+      text: "",
+      metadata: {
+        pages: 0,
+        entities: 0,
+        textStyles: 0
+      }
+    };
   }
 
   const text = document.text || "";
@@ -474,20 +524,20 @@ function extractContent(document: any): { text: string; metadata: any } {
   if (!text && document.pages && document.pages.length > 0) {
     console.log("No direct text found, attempting to extract from pages...");
     let pageText = "";
-    document.pages.forEach((page: any, pageIndex: number) => {
+    document.pages.forEach((page, pageIndex: number) => {
       console.log(`Processing page ${pageIndex + 1}`);
       if (page.paragraphs) {
-        page.paragraphs.forEach((paragraph: any) => {
+        page.paragraphs.forEach((paragraph) => {
           if (paragraph.layout && paragraph.layout.textAnchor) {
             const textSegments = paragraph.layout.textAnchor.textSegments || [];
-            textSegments.forEach((segment: any) => {
+            textSegments.forEach((segment) => {
               if (
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined
               ) {
                 const segmentText = document.text?.substring(
-                  parseInt(segment.startIndex),
-                  parseInt(segment.endIndex)
+                  parseInt(segment.startIndex + ""),
+                  parseInt(segment.endIndex + "")
                 );
                 if (segmentText) {
                   pageText += segmentText + "\n";
@@ -503,20 +553,20 @@ function extractContent(document: any): { text: string; metadata: any } {
             pageIndex + 1
           }`
         );
-        page.tokens.forEach((token: any) => {
+        page.tokens.forEach((token) => {
           if (
             token.layout &&
             token.layout.textAnchor &&
             token.layout.textAnchor.textSegments
           ) {
-            token.layout.textAnchor.textSegments.forEach((segment: any) => {
+            token.layout.textAnchor.textSegments.forEach((segment) => {
               if (
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined
               ) {
                 const tokenText = document.text?.substring(
-                  parseInt(segment.startIndex),
-                  parseInt(segment.endIndex)
+                  parseInt(segment.startIndex + ""),
+                  parseInt(segment.endIndex + "")
                 );
                 if (tokenText) {
                   pageText += tokenText + " ";
@@ -658,7 +708,7 @@ export async function POST(req: NextRequest) {
       );
 
       // Extract content
-      const { text: extractedText, metadata } = extractContent(document);
+      const { text: extractedText } = extractContent(document);
       if (!extractedText) {
         throw new Error("Failed to extract text from document");
       }
@@ -696,7 +746,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const newDocument = {
+      const newDocument: NewDocument = {
         title,
         slug: slugifiedTitle,
         owner: user.slug,
