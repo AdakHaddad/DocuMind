@@ -2,6 +2,7 @@
 
 import { DocumentObject } from "@/src/app/[user]/page";
 import React, { useEffect, useRef, useState } from "react";
+import { QuestionAnswerBody } from "../pages/Questions";
 
 type AIRoomChatModalProps = {
   sender: "user" | "ai";
@@ -20,12 +21,7 @@ interface IAIRoomChatModal {
     question: string;
     answer: string;
   };
-  quiz?: {
-    question: string;
-    userAnswer: string;
-    status: string;
-    explanation: string;
-  };
+  quiz?: QuestionAnswerBody;
 }
 
 const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
@@ -78,7 +74,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
                 const quizQnAPreContext = `Existing quiz question: ${
                   quiz!.question
                 }\nUser's answer: ${quiz!.userAnswer}\nStatus of answer: ${
-                  quiz!.status
+                  quiz!.userAnswer
                 }\nExplanation: ${quiz!.explanation}`;
 
                 // set precontext
