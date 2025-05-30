@@ -14,7 +14,7 @@ export function validateEnv() {
   // Ensure NEXTAUTH_URL is a valid URL
   try {
     new URL(process.env.NEXTAUTH_URL || '');
-  } catch (error) {
+  } catch {
     throw new Error('NEXTAUTH_URL must be a valid URL');
   }
 } 
