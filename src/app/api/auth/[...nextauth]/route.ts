@@ -1,7 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { SignInUser } from "../session/helper";
-import { validateEnv } from "@/src/lib/env";
 
 export interface User {
   id: string;
@@ -10,8 +9,14 @@ export interface User {
   slug?: string | null;
 }
 
-// Validate environment variables
-validateEnv();
+// Ensure we have a secret during runtime
+const getSecret = () => {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error('NEXTAUTH_SECRET is not set');
+  }
+  return secret;
+};
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -33,7 +38,7 @@ const authOptions: NextAuthOptions = {
       }
     })
   ],
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-build-time',
   pages: {
     signIn: "/signin",
     signOut: "/signout"
@@ -47,6 +52,9 @@ const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      // Ensure we have a secret at runtime
+      getSecret();
+      
       if (user) {
         token.user = user;
       }
