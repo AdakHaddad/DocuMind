@@ -22,31 +22,39 @@ export default function RootLayout({
 
   useEffect(() => {
     const fetchUser = async () => {
-      const response = await fetch(`/api/auth/session`, {
-        method: "GET"
-      });
-
+      const response = await fetch(`/api/auth/session`, { method: "GET" });
       if (!response.ok) return (window.location.href = "/login");
 
       const data = await response.json();
       setUser(data);
-
-      return data;
     };
 
+    fetchUser();
+  }, []); // Run only once on mount
+
+  useEffect(() => {
     const fetchData = async () => {
+      if (!user) return; // wait for user to be loaded
+
       const response = await fetch(`/api/learning/documents?slug=${slug}`, {
         method: "GET"
       });
-      if (!response.ok) return (window.location.href = `/${slug}`);
+      if (!response.ok) return (window.location.href = `/${user.slug}`);
 
       const data = await response.json();
+
+      // Check if document is not public and the user is not the owner
+      if (data.access !== "public" && data.owner !== user.slug) {
+        window.location.href = `/${user.slug}`;
+        return;
+      }
+
       setDocument(data);
       setNewTitle(data.title);
     };
 
-    Promise.all([fetchUser(), fetchData()]);
-  }, [slug]);
+    fetchData();
+  }, [slug, user]); // This is now safe since `user` is set only once
 
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
