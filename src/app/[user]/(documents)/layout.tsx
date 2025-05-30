@@ -103,9 +103,9 @@ export default function RootLayout({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center bg-white text-black h-full w-full">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Header>
-        <div className="flex gap-6 py-2 flex-wrap justify-between items-center w-full px-4">
+        <div className="flex gap-6 py-4 flex-wrap justify-between items-center w-full px-6">
           {/* Back Button & Title */}
           <div className="flex gap-6 items-center">
             <button
@@ -158,7 +158,7 @@ export default function RootLayout({
             <button
               hidden={isRenaming}
               onClick={() => setIsRenaming(true)}
-              className="border-2 border-white bg-transparent text-white px-6 py-3 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white transition-colors shadow-md"
+              className="border-2 border-[#F5A623] bg-[#F5A623] text-white px-6 py-3 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 transition-colors"
             >
               Rename
             </button>
@@ -172,7 +172,10 @@ export default function RootLayout({
         </div>
       </Header>
 
-      {children}
+      <main className="flex-1 flex flex-col pt-6">
+        {children}
+      </main>
+
       <InsideFooter document={document} />
     </div>
   );

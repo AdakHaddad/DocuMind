@@ -1,11 +1,11 @@
-export default function Header({ children }: { children?: React.ReactNode }) {
+"use client";
+
+import { ReactNode } from "react";
+
+export default function Header({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center justify-center bg-documind-primary py-[.5vw] mb-[2vw] shadow-[-3px_6px_4px_0px_rgba(0,0,0,0.3)] fixed top-0 left-0 w-full">
-      {children ? (
-        children
-      ) : (
-        <p className="text-[2vw] font-inter">{`<header>`}</p>
-      )}
-    </div>
+    <header className="sticky top-0 z-50 bg-[#4a90e2] text-white shadow-md">
+      {children}
+    </header>
   );
 }

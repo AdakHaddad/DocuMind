@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ModalTemplate from "@/src/components/modals/ModalTemplate";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 
@@ -44,27 +44,32 @@ const LoadingIndicator = () => (
 
 const SignIn = () => {
   const router = useRouter();
-
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm<SignInFormData>(); // Use the type for form data
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  } = useForm<SignInFormData>();
 
-  // Define the submit handler with the correct type
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.slug) {
+      router.push(`/${session.user.slug}`);
+    } else {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [status, session, router]);
+
   const onSubmit: SubmitHandler<SignInFormData> = async (data) => {
     try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
       const res = await signIn("credentials", {
         redirect: false,
         email: data.email,
@@ -73,30 +78,24 @@ const SignIn = () => {
 
       if (res?.error) {
         setErrorMessage("Invalid email or password.");
-      } else {
-        const userSession = await fetch("/api/auth/session");
-        if (!userSession) {
-          setErrorMessage("Failed to retrieve user session.");
-          return;
-        }
-
-        const data = await userSession.json();
-
-        // Sign-in was successful
-        router.push(`/${data?.slug}`); // Redirect to dashboard or home on success
+        setIsLoading(false);
+        return;
       }
+
+      // The session will be automatically updated by NextAuth
+      // and the useEffect above will handle the redirect
     } catch (error) {
       console.error("Error during sign-in:", error);
       setErrorMessage("There was an issue signing in. Please try again.");
+      setIsLoading(false);
     }
   };
 
   const handleSignUp = () => {
-    setIsLoading(true);
     router.push("/signup");
   };
 
-  if (isLoading) {
+  if (isLoading || status === "loading") {
     return <LoadingIndicator />;
   }
 

@@ -24,7 +24,6 @@ const authOptions: NextAuthOptions = {
 
         // Check if the user exists and authenticate
         const user = await SignInUser(credentials.email, credentials.password);
-
         return user;
       }
     })
@@ -34,7 +33,20 @@ const authOptions: NextAuthOptions = {
     signOut: "/signout"
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60 // 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    }
   },
   callbacks: {
     async jwt({ token, user }) {

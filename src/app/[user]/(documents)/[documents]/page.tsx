@@ -5,7 +5,7 @@ import { Share2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import ShareModal from "@/src/components/modals/ShareDocumentModal";
 import AIRoomChatModal from "@/src/components/modals/AIRoomChatModal";
-import { DocumentObject } from "../../page";
+import { DocumentObject } from "@/src/types/documents";
 
 export default function PDFViewPage() {
   const params = useParams();
@@ -73,12 +73,12 @@ export default function PDFViewPage() {
 
   const primaryButtonClasses = `border-3 border-[#4a90e2] bg-[#4a90e2] text-white px-4 py-2 rounded-md font-medium hover:bg-[#3a80d2] hover:border-[#3a80d2] hover:cursor-pointer transition-colors shadow-md`;
 
-  if (!document) return;
+  if (!document) return null;
 
   return (
-    <div className="flex flex-col max-h-screen w-full h-full items-center justify-center">
+    <div className="flex-1 w-full px-4">
       {/* Main Content */}
-      <div className="lg:max-w-6xl w-full lg:max-h-[60vh] h-full mx-auto bg-white rounded-2xl p-6 flex flex-col md:flex-row gap-6 shadow-[-3px_2px_10px_0px_rgba(0,0,0,0.3)]">
+      <div className="h-full w-full mx-auto bg-white rounded-2xl p-6 flex flex-col md:flex-row gap-6 shadow-md">
         {/* PDF Content */}
         <div className="flex-1 flex flex-col w-full">
           <div className="flex items-start mb-4">
@@ -102,7 +102,7 @@ export default function PDFViewPage() {
             <div className="flex-1 p-6 bg-gray-100">
               <iframe
                 src={`${document.driveFileUrl}`}
-                className="w-full h-full rounded-md"
+                className="w-full h-full min-h-[600px] rounded-md"
                 title={document.title}
               />
             </div>
@@ -113,8 +113,8 @@ export default function PDFViewPage() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-full h-full md:w-[300px] bg-white rounded-lg p-4 shadow-[-2px_2px_6px_0px_rgba(0,0,0,0.3)]">
-          <div className="mb-6 h-full flex flex-col">
+        <div className="w-full md:w-[300px] bg-white rounded-lg p-4 shadow-md">
+          <div className="flex flex-col h-full">
             <h3 className="text-xl font-bold mb-3">Key Summary</h3>
 
             <div className="flex-1 overflow-auto rounded-md bg-gray-50 p-3 mb-4 text-sm text-gray-800 shadow-inner">
@@ -123,7 +123,7 @@ export default function PDFViewPage() {
 
             <button
               onClick={handleAskSomething}
-              className={`w-full h-fit rounded-md transition-colors ${primaryButtonClasses}`}
+              className={`w-full rounded-md transition-colors ${primaryButtonClasses}`}
             >
               Ask Something
             </button>
