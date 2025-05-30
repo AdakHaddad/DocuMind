@@ -16,7 +16,7 @@ export type FlashcardState = {
 
 export default function Flashcards() {
   const params = useParams();
-  const [document, setDocument] = useState<DocumentObject | null>(null);
+  const [docData, setDocData] = useState<DocumentObject | null>(null);
   const slug = params?.documents as string;
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
 
@@ -31,9 +31,9 @@ export default function Flashcards() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            documentId: document!._id,
+            documentId: docData!._id,
             count: 10,
-            regeneratePrompt: regen // Optional prompt for regeneration
+            regeneratePrompt: regen
           })
         });
 
@@ -43,11 +43,8 @@ export default function Flashcards() {
         }
 
         const data = await response.json();
-
-        // raw flashcards
         const raw = data.flashcards;
 
-        // fill the state
         const flashcards: FlashcardState[] = raw.map(
           (card: { question: string; answer: string }) => ({
             question: card.question,
@@ -61,10 +58,9 @@ export default function Flashcards() {
         console.error("Error creating flashcards:", error);
       }
     },
-    [document]
+    [docData]
   );
 
-  // 1. Fetch document once when slug changes
   useEffect(() => {
     const fetchData = async () => {
       if (!slug) return;
@@ -86,20 +82,19 @@ export default function Flashcards() {
         return;
       }
 
-      setDocument(data);
+      setDocData(data);
     };
 
     fetchData();
   }, [slug]);
 
-  // 2. Fetch flashcards once document is available
   useEffect(() => {
-    if (!document) return;
+    if (!docData) return;
 
     const fetchFlashcards = async () => {
       try {
         const response = await fetch(
-          `/api/learning/flashcards?docsId=${document._id}`,
+          `/api/learning/flashcards?docsId=${docData._id}`,
           {
             method: "GET"
           }
@@ -119,6 +114,7 @@ export default function Flashcards() {
 
         data = await response.json();
         const raw = data.flashcards;
+
         const flashcards: FlashcardState[] = raw.map(
           (card: { question: string; answer: string }) => ({
             question: card.question,
@@ -134,7 +130,7 @@ export default function Flashcards() {
     };
 
     fetchFlashcards();
-  }, [document, createFlashcards]);
+  }, [docData, createFlashcards]);
 
   const handleRegenerateModal = () => {
     setShowRegenerateModal((prev) => !prev);
@@ -148,7 +144,22 @@ export default function Flashcards() {
     );
   }
 
-  if (!document) return;
+  if (!docData) return;
+
+  // Add this function inside the component
+  const handleDownload = () => {
+    const json = JSON.stringify(cards, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${docData?.title + "-flashcards" || "flashcards"}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col max-h-screen items-center justify-center">
@@ -156,7 +167,7 @@ export default function Flashcards() {
       {showRegenerateModal && (
         <RegeneratePromptModal
           onClose={handleRegenerateModal}
-          documentId={document._id}
+          documentId={docData._id}
           type="flashcards"
         />
       )}
@@ -166,19 +177,19 @@ export default function Flashcards() {
         {/* Flashcards container */}
         <div
           className="flex flex-wrap gap-6 overflow-y-auto"
-          style={{ maxHeight: "calc(100vh - 220px)" }} // leave room for padding + buttons
+          style={{ maxHeight: "calc(100vh - 220px)" }}
         >
           {cards.map((card, index) => (
             <div
               key={index}
               className="flex-grow basis-[calc(33.333% - 1.5rem)] min-w-[250px]"
-              style={{ minHeight: "300px" }} // ensure consistent height
+              style={{ minHeight: "300px" }}
             >
               <Flashcard
                 state={card.state}
                 questionText={card.question}
                 answerText={card.answer}
-                document={document!}
+                document={docData}
               />
             </div>
           ))}
@@ -192,7 +203,10 @@ export default function Flashcards() {
           >
             Regenerate
           </button>
-          <button className="border-3 border-[#4a90e2] bg-white text-[#3a80d2] px-6 py-2 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white hover:cursor-pointer transition-colors shadow-md">
+          <button
+            onClick={handleDownload}
+            className="border-3 border-[#4a90e2] bg-white text-[#3a80d2] px-6 py-2 rounded-md font-medium hover:bg-gray-400 hover:border-gray-400 hover:text-white hover:cursor-pointer transition-colors shadow-md"
+          >
             Save Flash Cards
           </button>
         </div>

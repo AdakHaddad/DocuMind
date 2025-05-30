@@ -30,7 +30,7 @@ export interface SingleStatistic {
 
 export default function Questions() {
   const params = useParams();
-  const [document, setDocument] = useState<DocumentObject | null>(null);
+  const [doc, setDoc] = useState<DocumentObject | null>(null);
   const [statistics, setStatistics] = useState<SingleStatistic[]>([]);
   const slug = params?.documents as string;
   const [activeTab, setActiveTab] = useState<QuestionMode>("essay");
@@ -83,7 +83,7 @@ export default function Questions() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            documentId: document!._id,
+            documentId: doc!._id,
             count: 10,
             regeneratePrompt: regen // Optional prompt for regeneration
           })
@@ -117,10 +117,10 @@ export default function Questions() {
         console.error("Error creating questions:", error);
       }
     },
-    [document]
+    [doc]
   );
 
-  // 1. Fetch document once when slug changes
+  // 1. Fetch doc once when slug changes
   useEffect(() => {
     const fetchData = async () => {
       if (!slug) return;
@@ -142,7 +142,7 @@ export default function Questions() {
         return;
       }
 
-      setDocument(data);
+      setDoc(data);
     };
 
     fetchData();
@@ -150,16 +150,13 @@ export default function Questions() {
 
   // 2. Fetch quizes once document is available
   useEffect(() => {
-    if (!document) return;
+    if (!doc) return;
 
     const fetchQuestions = async () => {
       try {
-        const response = await fetch(
-          `/api/learning/quizes?docsId=${document._id}`,
-          {
-            method: "GET"
-          }
-        );
+        const response = await fetch(`/api/learning/quizes?docsId=${doc._id}`, {
+          method: "GET"
+        });
 
         let data = null;
 
@@ -206,7 +203,7 @@ export default function Questions() {
     };
 
     fetchQuestions();
-  }, [document, createQuestions, setQuizesId]);
+  }, [doc, createQuestions, setQuizesId]);
 
   // Fetch statistics
   useEffect(() => {
@@ -283,7 +280,21 @@ export default function Questions() {
   const secondaryButtonClasses = `border-3 border-[#4a90e2] bg-white text-[#3a80d2] text-lg  px-6 py-2 rounded-md font-bold hover:bg-gray-400 hover:border-gray-400 hover:text-white transition-colors cursor-pointer shadow-md`;
   const tertiaryButtonClasses = `border-3 border-[#F5A623] bg-[#F5A623] text-white text-lg px-6 py-2 rounded-md font-bold hover:bg-gray-400 hover:bg-orange-400 hover:border-orange-400 transition-colors cursor-pointer shadow-md`;
 
-  if (!document) return;
+  if (!doc) return;
+
+  const handleDownload = () => {
+    const json = JSON.stringify(questions, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${doc?.title || "questions"}-questions.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col max-w-screen lg:w-90/100 py-6 px-8 gap-4 rounded-md items-center shadow-[-2px_2px_10px_0px_rgba(0,0,0,0.3)]">
@@ -293,7 +304,7 @@ export default function Questions() {
             setShowRegenerateModal(false);
             setShowResults(false);
           }}
-          documentId={document._id}
+          documentId={doc._id}
           type="quizes"
         />
       )}
@@ -415,7 +426,7 @@ export default function Questions() {
               {/* Per-Question Report Modal */}
               {reportModalOpenIndex === index && (
                 <ReportQuestionModal
-                  document={document}
+                  document={doc}
                   question={q.question}
                   onClose={() => setReportModalOpenIndex(null)}
                   onSubmit={() => {
@@ -427,7 +438,7 @@ export default function Questions() {
               {/* Per-Question Chat Modal */}
               {chatModalOpenIndex === index && (
                 <AIRoomChatModal
-                  document={document}
+                  document={doc}
                   show={chatModalOpenIndex === index}
                   onClose={() => setChatModalOpenIndex(null)}
                   purpose="quiz"
@@ -492,10 +503,12 @@ export default function Questions() {
         >
           Regenerate
         </button>
-        <button onClick={() => checkAll()} className={tertiaryButtonClasses}>
+        <button onClick={checkAll} className={tertiaryButtonClasses}>
           Check All
         </button>
-        <button className={secondaryButtonClasses}>Save Questions</button>
+        <button onClick={handleDownload} className={secondaryButtonClasses}>
+          Save Questions
+        </button>
       </div>
     </div>
   );
