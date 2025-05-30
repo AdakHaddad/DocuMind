@@ -4,7 +4,7 @@ import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { deepseekAsk, Messages } from "@/src/app/api/deepseekLogic";
 import { SingleReport } from "../documents/route";
-import { getSession } from "@/src/app/api/auth/session/route";
+import { GetSession as getSession } from "@/src/app/api/auth/session/helper";
 import { User } from "@/src/app/api/auth/[...nextauth]/route";
 
 // Flashcard interface

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/src/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { getSession } from "../../auth/session/route";
+import { GetSession as getSession } from "../../auth/session/helper";
 import { User } from "../../auth/[...nextauth]/route";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { unlinkSync, existsSync } from "fs";
