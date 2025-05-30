@@ -7,7 +7,6 @@ import { User } from "../../auth/[...nextauth]/route";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { unlinkSync, existsSync } from "fs";
 import path from "path";
-import ConvertApi from "convertapi";
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { google } from "googleapis";
 import { Readable } from "stream";
@@ -15,12 +14,7 @@ import { drive_v3 } from "googleapis";
 
 // Define an interface for the request body}
 
-interface ConvertApiParams {
-  File: string;
-  StoreFile: boolean;
-  Timeout?: number;
-  PdfResolution?: number;
-}
+
 
 interface NewDocument {
   title: string;
@@ -224,150 +218,7 @@ async function getOrCreateParsedFolder(drive: drive_v3.Drive): Promise<string> {
   }
 }
 
-// Convert files to PDF using ConvertAPI with improved error handling
-async function convertToPdf(
-  inputPath: string,
-  outputPath: string
-): Promise<boolean> {
-  try {
-    console.log(`Converting ${inputPath} to PDF...`);
 
-    // Get the file extension without the dot
-    const fileExtension = path.extname(inputPath).substring(1).toLowerCase();
-    console.log(`File extension: ${fileExtension}`);
-
-    // Skip conversion for already supported types
-    if (fileExtension === "pdf") {
-      console.log("Input is already PDF, copying file...");
-      await writeFile(outputPath, await readFile(inputPath));
-      console.log("File copied successfully");
-      return true;
-    }
-
-    // Use CommonJS style implementation
-    try {
-      console.log("Attempting conversion with CommonJS style ConvertAPI...");
-      const convertApiSecret =
-        process.env.CONVERT_SECRET || "secret_qt9utZx8jxAHOJqF";
-      const convertapiClient = new ConvertApi(convertApiSecret);
-
-      // Add retry logic for better reliability
-      let retryCount = 0;
-      const maxRetries = 2;
-      let lastError: Error | null = null;
-
-      while (retryCount <= maxRetries) {
-        try {
-          if (retryCount > 0) {
-            console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
-          }
-
-          // Customize parameters based on file type
-          const conversionParams: ConvertApiParams = {
-            File: inputPath,
-            StoreFile: true,
-            Timeout: 300 // Increased timeout for large files
-          };
-
-          // Special handling for presentations
-          if (fileExtension === "pptx" || fileExtension === "ppt") {
-            console.log("Using optimized parameters for PowerPoint files");
-            conversionParams.PdfResolution = 300; // Higher resolution
-          }
-
-          // Perform the conversion
-          const result = await convertapiClient.convert(
-            "pdf",
-            conversionParams,
-            fileExtension
-          );
-
-          // Save the result file
-          await result.saveFiles(path.dirname(outputPath));
-
-          // Rename the file if needed to match the expected output path
-          const resultFiles = await result.files;
-          if (resultFiles && resultFiles.length > 0) {
-            const convertedFilePath = path.join(
-              path.dirname(outputPath),
-              resultFiles[0].fileName
-            );
-            if (
-              convertedFilePath !== outputPath &&
-              existsSync(convertedFilePath)
-            ) {
-              await writeFile(outputPath, await readFile(convertedFilePath));
-              if (existsSync(convertedFilePath)) {
-                unlinkSync(convertedFilePath); // Clean up the original converted file
-              }
-            }
-          }
-
-          console.log("ConvertAPI conversion successful");
-
-          // Verify the output file exists and has content
-          if (existsSync(outputPath)) {
-            const fileStats = await readFile(outputPath);
-            if (fileStats.length > 0) {
-              console.log(
-                `Conversion verification: ${fileStats.length} bytes on disk`
-              );
-              return true;
-            }
-          }
-
-          // If we reach here, conversion technically succeeded but file is invalid
-          throw new Error("Conversion resulted in an invalid file");
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-          retryCount++;
-
-          if (retryCount <= maxRetries) {
-            console.log(
-              `Conversion attempt failed: ${lastError.message}. Retrying...`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, 1000 * retryCount)
-            );
-          } else {
-            console.error(`All ${maxRetries} retry attempts failed`);
-          }
-        }
-      }
-
-      // If we reach here, all attempts failed
-      throw lastError;
-    } catch (conversionError) {
-      console.error("ConvertAPI conversion failed:", conversionError);
-
-      // For files we know Document AI can handle directly, we can try to use them directly
-      const directlySupportedTypes = [
-        "jpeg",
-        "jpg",
-        "png",
-        "gif",
-        "bmp",
-        "tiff",
-        "tif"
-      ];
-
-      if (directlySupportedTypes.includes(fileExtension)) {
-        console.log(
-          `File type ${fileExtension} is directly supported by Document AI. Using original file.`
-        );
-        await writeFile(outputPath, await readFile(inputPath));
-        return true;
-      }
-
-      console.log("Creating a conversion failure marker");
-      // Return false to indicate conversion failed but don't throw an error
-      return false;
-    }
-  } catch (error) {
-    console.error("Error during conversion to PDF:", error);
-    return false;
-  }
-}
 
 // Improved function to process document with Google Cloud Document AI
 import { protos } from "@google-cloud/documentai";
