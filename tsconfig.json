@@ -28,6 +28,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "tailwind.config.mts"
-, "__test__/docuMind.test.ts"  ],
+, "__test__/docuMind.test.js"  ],
   "exclude": ["node_modules"]
 }
