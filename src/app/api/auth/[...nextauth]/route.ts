@@ -59,7 +59,8 @@ const authOptions: NextAuthOptions = {
       session.user = token.user as User;
       return session;
     }
-  }
+  },
+  secret: process.env.NEXTAUTH_SECRET
 };
 
 const handler = NextAuth(authOptions);
