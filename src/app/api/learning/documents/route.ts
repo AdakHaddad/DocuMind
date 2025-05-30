@@ -511,6 +511,7 @@ function extractContent(
     pages: number;
     entities: number;
     textStyles: number;
+    isStubContent?: boolean;
   };
 } {
   console.log("Extracting content from document...");
@@ -585,8 +586,8 @@ function extractContent(
                 document.text
               ) {
                 const segmentText = document.text.substring(
-                  parseInt(segment.startIndex),
-                  parseInt(segment.endIndex)
+                  parseInt(segment.startIndex + ""),
+                  parseInt(segment.endIndex + "")
                 );
                 if (segmentText) {
                   pageText += segmentText + "\n";
@@ -616,9 +617,9 @@ function extractContent(
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined
               ) {
-                const tokenText = document.text.substring(
-                  parseInt(segment.startIndex),
-                  parseInt(segment.endIndex)
+                const tokenText = document.text?.substring(
+                  parseInt(segment.startIndex + ""),
+                  parseInt(segment.endIndex + "")
                 );
                 if (tokenText) {
                   pageText += tokenText + " ";
@@ -637,9 +638,10 @@ function extractContent(
   }
 
   // If all else fails, check if we have a raw response with text content
-  if (document.rawDocument && typeof document.rawDocument === 'string') {
+  const rawDoc = (document as any).rawDocument;
+  if (rawDoc && typeof rawDoc === 'string') {
     try {
-      const parsedRaw = JSON.parse(document.rawDocument);
+      const parsedRaw = JSON.parse(rawDoc);
       if (parsedRaw.text) {
         console.log("Extracted text from raw document content");
         return { text: parsedRaw.text, metadata };
@@ -652,13 +654,13 @@ function extractContent(
   // If we're dealing with a PowerPoint file but found no content, create a stub
   // This ensures we don't fail the process for PPT files with minimal text content
   const fileExtension = document.mimeType && document.mimeType.split('/').pop();
-  if (['ppt', 'pptx'].includes(fileExtension) || metadata.documentType === "layout") {
+  if (['ppt', 'pptx'].includes(fileExtension as string) || metadata.documentType === "layout") {
     console.log("Creating stub content for presentation file");
     return {
       text: "[This presentation file contains primarily visual content that has been processed for search and analysis.]",
       metadata: {
         ...metadata,
-        isStubContent: true
+        isStubContent : true
       }
     };
   }
