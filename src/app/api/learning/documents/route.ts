@@ -404,7 +404,7 @@ function extractContent(
     const blocks = document.documentLayout.blocks;
     console.log(`Found ${blocks.length} text blocks in layout`);
     
-    blocks.forEach((block: any, index: number) => {
+    blocks.forEach((block) => {
       if (block.textBlock && block.textBlock.text) {
         layoutText += block.textBlock.text + "\n";
       }
@@ -489,7 +489,7 @@ function extractContent(
   }
 
   // If all else fails, check if we have a raw response with text content
-  const rawDoc = (document as any).rawDocument;
+  const rawDoc = (document).rawDocument;
   if (rawDoc && typeof rawDoc === 'string') {
     try {
       const parsedRaw = JSON.parse(rawDoc);
@@ -497,8 +497,8 @@ function extractContent(
         console.log("Extracted text from raw document content");
         return { text: parsedRaw.text, metadata };
       }
-    } catch (e) {
-      console.log("Failed to parse raw document content as JSON");
+    } catch (error) {
+      console.log("Failed to parse raw document content as JSON ", error);
     }
   }
 
