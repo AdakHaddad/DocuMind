@@ -5,16 +5,36 @@ import { ObjectId } from "mongodb";
 import { GetSession } from "../../auth/session/route";
 import { User } from "../../auth/[...nextauth]/route";
 import { writeFile, mkdir, readFile } from "fs/promises";
-import { unlinkSync, existsSync, readFileSync } from "fs";
+import { unlinkSync, existsSync } from "fs";
 import path from "path";
+import ConvertApi from "convertapi";
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { google } from "googleapis";
 import { Readable } from "stream";
+import { drive_v3 } from "googleapis";
 
-// Import ConvertAPI with CommonJS style for direct usage
-const convertapiJS = require('convertapi');
+// Define an interface for the request body}
 
-// Define an interface for the request body
+interface ConvertApiParams {
+  File: string;
+  StoreFile: boolean;
+  Timeout?: number;
+  PdfResolution?: number;
+}
+
+interface NewDocument {
+  title: string;
+  slug: string;
+  owner: string;
+  content: string;
+  summary: string;
+  access: "private" | "public";
+  reports: SingleReport[];
+  driveFileUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface DocumentRequest {
   title: string;
   content: string;
@@ -23,48 +43,6 @@ interface DocumentRequest {
 export interface SingleReport {
   question: string;
   report: string;
-}
-
-interface DocumentObject {
-  title: string;
-  slug: string; // Unique slug for the document
-  owner: string; // Owner's slug
-  content: string;
-  summary: string;
-  access: "public" | "private";
-  reports: SingleReport[];
-  driveFileUrl?: string; // Google Drive file URL
-  createdAt?: Date; // Optional timestamp field
-  updatedAt?: Date; // Optional timestamp field
-}
-
-// Helper class for timing operations
-class Stopwatch {
-  private startTime: number | null = null;
-  private endTime: number | null = null;
-
-  start(): Stopwatch {
-    this.startTime = Date.now();
-    return this;
-  }
-
-  stop(): Stopwatch {
-    this.endTime = Date.now();
-    return this;
-  }
-
-  getElapsedTime(): number {
-    if (this.startTime === null) return 0;
-    if (this.endTime === null) return Date.now() - this.startTime;
-    return this.endTime - this.startTime;
-  }
-
-  getFormattedTime(): string {
-    const elapsed = this.getElapsedTime() / 1000;
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    return `${minutes}m ${seconds.toFixed(2)}s`;
-  }
 }
 
 // Helper to generate a unique filename
@@ -94,7 +72,7 @@ function getMimeType(extension: string) {
     ".doc": "application/msword",
     ".docx":
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".txt": "text/plain",
+    ".txt": "text/plain"
   };
   return mimeTypes[ext] || "application/octet-stream";
 }
@@ -113,11 +91,13 @@ async function getGoogleDriveClient() {
     try {
       if (process.env.SERVICE_KEY.startsWith("{")) {
         credentials = JSON.parse(process.env.SERVICE_KEY.replace(/\\n/g, "\n"));
-      } else if (process.env.SERVICE_KEY.includes("-----BEGIN PRIVATE KEY-----")) {
+      } else if (
+        process.env.SERVICE_KEY.includes("-----BEGIN PRIVATE KEY-----")
+      ) {
         credentials = {
           client_email: process.env.SERVICE_EMAIL,
           private_key: process.env.SERVICE_KEY.replace(/\\n/g, "\n"),
-          project_id: process.env.GCP_PROJECT_ID,
+          project_id: process.env.GCP_PROJECT_ID
         };
       } else {
         const keyPath = process.env.SERVICE_KEY;
@@ -126,7 +106,9 @@ async function getGoogleDriveClient() {
           credentials = JSON.parse(keyContent);
           console.log("Loaded credentials from file");
         } else {
-          throw new Error("SERVICE_KEY is not a valid JSON, key format, or file path");
+          throw new Error(
+            "SERVICE_KEY is not a valid JSON, key format, or file path"
+          );
         }
       }
     } catch (parseError) {
@@ -136,16 +118,18 @@ async function getGoogleDriveClient() {
         credentials = {
           client_email: process.env.SERVICE_EMAIL,
           private_key: process.env.SERVICE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-          project_id: process.env.GCP_PROJECT_ID,
+          project_id: process.env.GCP_PROJECT_ID
         };
       } else {
-        throw new Error("Could not parse SERVICE_KEY and no fallback credentials available");
+        throw new Error(
+          "Could not parse SERVICE_KEY and no fallback credentials available"
+        );
       }
     }
 
     const auth = new google.auth.GoogleAuth({
       credentials,
-      scopes: ["https://www.googleapis.com/auth/drive"],
+      scopes: ["https://www.googleapis.com/auth/drive"]
     });
 
     return google.drive({ version: "v3", auth });
@@ -153,13 +137,16 @@ async function getGoogleDriveClient() {
     console.error("Error setting up Google Drive client:", error);
     throw new Error(
       "Failed to initialize Google Drive client: " +
-      (error instanceof Error ? error.message : String(error))
+        (error instanceof Error ? error.message : String(error))
     );
   }
 }
 
 // Upload file to Google Drive
-async function uploadFileToDrive(filePath: string, fileName: string): Promise<string> {
+async function uploadFileToDrive(
+  filePath: string,
+  fileName: string
+): Promise<string> {
   try {
     console.log("Starting Google Drive upload...");
     const drive = await getGoogleDriveClient();
@@ -169,7 +156,7 @@ async function uploadFileToDrive(filePath: string, fileName: string): Promise<st
 
     const fileMetadata = {
       name: fileName,
-      parents: [folderId],
+      parents: [folderId]
     };
 
     console.log(`Uploading file to Google Drive folder (parsed)...`);
@@ -177,8 +164,8 @@ async function uploadFileToDrive(filePath: string, fileName: string): Promise<st
       requestBody: fileMetadata,
       media: {
         mimeType: mimeType,
-        body: fileStream,
-      },
+        body: fileStream
+      }
     });
 
     if (!response.data.id) {
@@ -198,7 +185,7 @@ async function uploadFileToDrive(filePath: string, fileName: string): Promise<st
 }
 
 // Helper to get or create the "parsed" folder in Google Drive
-async function getOrCreateParsedFolder(drive: any) {
+async function getOrCreateParsedFolder(drive: drive_v3.Drive): Promise<string> {
   try {
     const folderName = "parsed";
     const folderQuery = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
@@ -206,29 +193,29 @@ async function getOrCreateParsedFolder(drive: any) {
     const response = await drive.files.list({
       q: folderQuery,
       fields: "files(id, name)",
-      spaces: "drive",
+      spaces: "drive"
     });
 
     if (response.data.files && response.data.files.length > 0) {
       console.log(
         `Found existing "parsed" folder with ID: ${response.data.files[0].id}`
       );
-      return response.data.files[0].id;
+      return response.data.files[0].id || "";
     }
 
     console.log('Creating "parsed" folder in Google Drive...');
     const folderMetadata = {
       name: folderName,
-      mimeType: "application/vnd.google-apps.folder",
+      mimeType: "application/vnd.google-apps.folder"
     };
 
     const folder = await drive.files.create({
       requestBody: folderMetadata,
-      fields: "id",
+      fields: "id"
     });
 
     console.log(`Created "parsed" folder with ID: ${folder.data.id}`);
-    return folder.data.id;
+    return folder.data.id || "";
   } catch (error) {
     console.error("Error getting/creating Google Drive folder:", error);
     throw new Error(
@@ -238,114 +225,140 @@ async function getOrCreateParsedFolder(drive: any) {
 }
 
 // Convert files to PDF using ConvertAPI with improved error handling
-async function convertToPdf(inputPath: string, outputPath: string) {
+async function convertToPdf(
+  inputPath: string,
+  outputPath: string
+): Promise<boolean> {
   try {
     console.log(`Converting ${inputPath} to PDF...`);
-    
+
     // Get the file extension without the dot
     const fileExtension = path.extname(inputPath).substring(1).toLowerCase();
     console.log(`File extension: ${fileExtension}`);
-    
+
     // Skip conversion for already supported types
-    if (fileExtension === 'pdf') {
+    if (fileExtension === "pdf") {
       console.log("Input is already PDF, copying file...");
       await writeFile(outputPath, await readFile(inputPath));
       console.log("File copied successfully");
       return true;
     }
-    
+
     // Use CommonJS style implementation
     try {
       console.log("Attempting conversion with CommonJS style ConvertAPI...");
-      const convertApiSecret = process.env.CONVERT_SECRET || 'secret_qt9utZx8jxAHOJqF';
-      const convertapiClient = convertapiJS(convertApiSecret);
-      
+      const convertApiSecret =
+        process.env.CONVERT_SECRET || "secret_qt9utZx8jxAHOJqF";
+      const convertapiClient = new ConvertApi(convertApiSecret);
+
       // Add retry logic for better reliability
       let retryCount = 0;
       const maxRetries = 2;
       let lastError: Error | null = null;
-      
+
       while (retryCount <= maxRetries) {
         try {
           if (retryCount > 0) {
             console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
           }
-          
+
           // Customize parameters based on file type
-          const conversionParams: any = {
+          const conversionParams: ConvertApiParams = {
             File: inputPath,
             StoreFile: true,
             Timeout: 300 // Increased timeout for large files
           };
-          
+
           // Special handling for presentations
-          if (fileExtension === 'pptx' || fileExtension === 'ppt') {
+          if (fileExtension === "pptx" || fileExtension === "ppt") {
             console.log("Using optimized parameters for PowerPoint files");
             conversionParams.PdfResolution = 300; // Higher resolution
           }
-          
+
           // Perform the conversion
-          const result = await convertapiClient.convert('pdf', conversionParams, fileExtension);
-          
+          const result = await convertapiClient.convert(
+            "pdf",
+            conversionParams,
+            fileExtension
+          );
+
           // Save the result file
           await result.saveFiles(path.dirname(outputPath));
-          
+
           // Rename the file if needed to match the expected output path
-          const resultFiles = await result.files();
+          const resultFiles = await result.files;
           if (resultFiles && resultFiles.length > 0) {
-            const convertedFilePath = path.join(path.dirname(outputPath), resultFiles[0].FileName);
-            if (convertedFilePath !== outputPath && existsSync(convertedFilePath)) {
+            const convertedFilePath = path.join(
+              path.dirname(outputPath),
+              resultFiles[0].fileName
+            );
+            if (
+              convertedFilePath !== outputPath &&
+              existsSync(convertedFilePath)
+            ) {
               await writeFile(outputPath, await readFile(convertedFilePath));
               if (existsSync(convertedFilePath)) {
                 unlinkSync(convertedFilePath); // Clean up the original converted file
               }
             }
           }
-          
+
           console.log("ConvertAPI conversion successful");
-          
+
           // Verify the output file exists and has content
           if (existsSync(outputPath)) {
             const fileStats = await readFile(outputPath);
             if (fileStats.length > 0) {
-              console.log(`Conversion verification: ${fileStats.length} bytes on disk`);
+              console.log(
+                `Conversion verification: ${fileStats.length} bytes on disk`
+              );
               return true;
             }
           }
-          
+
           // If we reach here, conversion technically succeeded but file is invalid
           throw new Error("Conversion resulted in an invalid file");
-          
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           retryCount++;
-          
+
           if (retryCount <= maxRetries) {
-            console.log(`Conversion attempt failed: ${lastError.message}. Retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            console.log(
+              `Conversion attempt failed: ${lastError.message}. Retrying...`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount)
+            );
           } else {
             console.error(`All ${maxRetries} retry attempts failed`);
           }
         }
       }
-      
+
       // If we reach here, all attempts failed
       throw lastError;
-    } 
-    catch (conversionError) {
+    } catch (conversionError) {
       console.error("ConvertAPI conversion failed:", conversionError);
-      
+
       // For files we know Document AI can handle directly, we can try to use them directly
       const directlySupportedTypes = [
-        'jpeg', 'jpg', 'png', 'gif', 'bmp', 'tiff', 'tif'
+        "jpeg",
+        "jpg",
+        "png",
+        "gif",
+        "bmp",
+        "tiff",
+        "tif"
       ];
-      
+
       if (directlySupportedTypes.includes(fileExtension)) {
-        console.log(`File type ${fileExtension} is directly supported by Document AI. Using original file.`);
+        console.log(
+          `File type ${fileExtension} is directly supported by Document AI. Using original file.`
+        );
         await writeFile(outputPath, await readFile(inputPath));
         return true;
       }
-      
+
       console.log("Creating a conversion failure marker");
       // Return false to indicate conversion failed but don't throw an error
       return false;
@@ -357,7 +370,13 @@ async function convertToPdf(inputPath: string, outputPath: string) {
 }
 
 // Improved function to process document with Google Cloud Document AI
-async function processDocumentWithGcp(filePath: string, mimeType: string) {
+import { protos } from "@google-cloud/documentai";
+import { ClientOptions } from "google-gax";
+
+async function processDocumentWithGcp(
+  filePath: string,
+  mimeType: string
+): Promise<protos.google.cloud.documentai.v1.IDocument | null | undefined> {
   try {
     console.log("Starting Document AI processing...");
     console.log(`File path: ${filePath}`);
@@ -391,15 +410,20 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
         Processor ID: ${processorId ? "Set" : "Missing"}`);
     }
 
-    let clientOptions: any = {
+    const clientOptions: ClientOptions = {
       apiEndpoint: `${location}-documentai.googleapis.com`,
+      credentials: {
+        client_email: process.env.SERVICE_EMAIL!,
+        private_key: process.env.SERVICE_KEY!.replace(/\\n/g, "\n")
+      },
+      projectId: process.env.GCP_PROJECT_ID
     };
 
     if (process.env.NODE_ENV !== "production") {
       const credentials = {
         client_email: process.env.SERVICE_EMAIL,
         private_key: process.env.SERVICE_KEY?.replace(/\\n/g, "\n"),
-        project_id: projectId,
+        project_id: projectId
       };
 
       if (!credentials.client_email || !credentials.private_key) {
@@ -434,8 +458,8 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
       name,
       rawDocument: {
         content,
-        mimeType,
-      },
+        mimeType
+      }
     };
 
     console.log("Sending request to Document AI...");
@@ -462,7 +486,7 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
       console.log("No document object in result");
     }
 
-    return result.document;
+    return result.document || null;
   } catch (error) {
     console.error("Error in Document AI processing:", error);
     if (error instanceof Error) {
@@ -479,11 +503,27 @@ async function processDocumentWithGcp(filePath: string, mimeType: string) {
 }
 
 // Improved function to extract content from Document AI response
-function extractContent(document: any): { text: string; metadata: any } {
+function extractContent(
+  document: protos.google.cloud.documentai.v1.IDocument | null | undefined
+): {
+  text: string;
+  metadata: {
+    pages: number;
+    entities: number;
+    textStyles: number;
+  };
+} {
   console.log("Extracting content from document...");
   if (!document) {
     console.log("No document provided to extractContent");
-    return { text: "", metadata: {} };
+    return {
+      text: "",
+      metadata: {
+        pages: 0,
+        entities: 0,
+        textStyles: 0
+      }
+    };
   }
 
   // Initialize metadata
@@ -530,15 +570,15 @@ function extractContent(document: any): { text: string; metadata: any } {
     metadata.documentType = "pages";
     
     let pageText = "";
-    document.pages.forEach((page: any, pageIndex: number) => {
+    document.pages.forEach((page, pageIndex: number) => {
       console.log(`Processing page ${pageIndex + 1}`);
       
       // Extract from paragraphs
       if (page.paragraphs) {
-        page.paragraphs.forEach((paragraph: any) => {
+        page.paragraphs.forEach((paragraph) => {
           if (paragraph.layout && paragraph.layout.textAnchor) {
             const textSegments = paragraph.layout.textAnchor.textSegments || [];
-            textSegments.forEach((segment: any) => {
+            textSegments.forEach((segment) => {
               if (
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined &&
@@ -564,14 +604,14 @@ function extractContent(document: any): { text: string; metadata: any } {
             pageIndex + 1
           }`
         );
-        page.tokens.forEach((token: any) => {
+        page.tokens.forEach((token) => {
           if (
             token.layout &&
             token.layout.textAnchor &&
             token.layout.textAnchor.textSegments &&
             document.text
           ) {
-            token.layout.textAnchor.textSegments.forEach((segment: any) => {
+            token.layout.textAnchor.textSegments.forEach((segment) => {
               if (
                 segment.startIndex !== undefined &&
                 segment.endIndex !== undefined
@@ -629,58 +669,79 @@ function extractContent(document: any): { text: string; metadata: any } {
 
 // POST method for creating a new document
 export async function POST(req: NextRequest) {
-    const contentType = req.headers.get("content-type");
-    if (!contentType) {
-      return NextResponse.json({
+  const contentType = req.headers.get("content-type");
+  if (!contentType) {
+    return NextResponse.json(
+      {
         error: "Missing content type",
         details: "Content-Type header is required"
-      }, { status: 400 });
-    }
+      },
+      { status: 400 }
+    );
+  }
 
-    // Handle file upload case
-  if (contentType.includes('multipart/form-data')) {
+  // Handle file upload case
+  if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({
-        error: "No file provided",
-        details: "Please ensure you're sending a file in the form data with the key 'file'"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "No file provided",
+          details:
+            "Please ensure you're sending a file in the form data with the key 'file'"
+        },
+        { status: 400 }
+      );
     }
 
     // File validation
     const fileSize = file.size;
     if (fileSize === 0) {
-      return NextResponse.json({
-        error: "File is empty",
-        details: "The uploaded file has no content"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "File is empty",
+          details: "The uploaded file has no content"
+        },
+        { status: 400 }
+      );
     }
 
     const maxSize = 20 * 1024 * 1024; // 20MB limit
     if (fileSize > maxSize) {
-      return NextResponse.json({
-        error: "File too large",
-        details: `Maximum size is ${maxSize / 1024 / 1024}MB, got ${fileSize / 1024 / 1024}MB`
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "File too large",
+          details: `Maximum size is ${maxSize / 1024 / 1024}MB, got ${
+            fileSize / 1024 / 1024
+          }MB`
+        },
+        { status: 400 }
+      );
     }
 
     // Get user session
     const userSession = await GetSession(req);
     if (!userSession) {
-      return NextResponse.json({
-        error: "Unauthorized",
-        details: "You must be logged in to upload documents"
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          details: "You must be logged in to upload documents"
+        },
+        { status: 401 }
+      );
     }
 
     const user = userSession as User;
     if (!user.slug) {
-      return NextResponse.json({
-        error: "User slug is required",
-        details: "Your user account is missing required profile information"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "User slug is required",
+          details: "Your user account is missing required profile information"
+        },
+        { status: 400 }
+      );
     }
 
     // Process the file
@@ -701,7 +762,7 @@ export async function POST(req: NextRequest) {
       const document = await processDocumentWithGcp(filePath, file.type);
 
       // Extract content
-      const { text: extractedText, metadata } = extractContent(document);
+      const { text: extractedText } = extractContent(document);
       if (!extractedText) {
         throw new Error("Failed to extract text from document");
       }
@@ -714,7 +775,7 @@ export async function POST(req: NextRequest) {
       const db = await connectToDatabase();
       const documentsCollection = db.collection("documents");
 
-      const title = formData.get("title") as string || file.name;
+      const title = (formData.get("title") as string) || file.name;
       let slugifiedTitle = title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -736,7 +797,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const newDocument = {
+      const newDocument: NewDocument = {
         title,
         slug: slugifiedTitle,
         owner: user.slug,
@@ -763,13 +824,16 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json(newDocument, { status: 201 });
-
     } catch (error) {
       console.error("Error processing file:", error);
-      return NextResponse.json({
-        error: "Failed to process file",
-        details: error instanceof Error ? error.message : "Unknown error occurred"
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to process file",
+          details:
+            error instanceof Error ? error.message : "Unknown error occurred"
+        },
+        { status: 500 }
+      );
     }
   }
 }
@@ -777,13 +841,18 @@ export async function POST(req: NextRequest) {
 // GET All / by Id if query params exist
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id = searchParams.get("id") || "";
+  const slug = searchParams.get("slug") || "";
 
   if (id && !ObjectId.isValid(id)) {
     return NextResponse.json(
       { error: "Invalid document ID format" },
       { status: 400 }
     );
+  }
+
+  if (slug && typeof slug !== "string") {
+    return NextResponse.json({ error: "Invalid slug format" }, { status: 400 });
   }
 
   try {
@@ -803,11 +872,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (id) {
+    if (id || slug) {
       // Fetch document by ID
-      const document = await documentsCollection.findOne({
-        _id: new ObjectId(id)
-      });
+      let document = null;
+      if (id)
+        document = await documentsCollection.findOne({
+          _id: new ObjectId(id)
+        });
+      else if (slug)
+        document = await documentsCollection.findOne({
+          slug: slug
+        });
+
       if (!document) {
         return NextResponse.json(
           { error: "Document not found" },
@@ -931,7 +1007,7 @@ export async function PATCH(req: NextRequest) {
     if (existingDocument.title === title) {
       return NextResponse.json(
         { error: "Title is the same as current" },
-        { status: 400 }
+        { status: 200 }
       );
     }
 
@@ -983,6 +1059,6 @@ export async function PATCH(req: NextRequest) {
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: "100mb",
-  },
+    responseLimit: "100mb"
+  }
 };

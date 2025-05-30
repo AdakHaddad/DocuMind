@@ -43,6 +43,26 @@ export async function PATCH(req: NextRequest) {
 
     // Update the document's access type
     const objectId = new ObjectId(documentId);
+
+    const document = await documentsCollection.findOne({
+      _id: objectId
+    });
+
+    if (!document) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if the access is already set to the requested type
+    if (document.access === access) {
+      return NextResponse.json(
+        { error: "Access already set to the requested type" },
+        { status: 200 }
+      );
+    }
+
     const result = await documentsCollection.updateOne(
       { _id: objectId },
       { $set: { access } }

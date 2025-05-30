@@ -1,69 +1,203 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { DocumentObject } from "@/src/app/[user]/page";
+import React, { useEffect, useRef, useState } from "react";
+import { QuestionAnswerBody } from "../pages/Questions";
 
 type AIRoomChatModalProps = {
   sender: "user" | "ai";
   message: string;
 };
 
+type ChatPurpose = "general" | "flashcard" | "quiz";
+
 interface IAIRoomChatModal {
   initialChats?: AIRoomChatModalProps[];
   onClose?: () => void;
   show?: boolean;
+  document: DocumentObject;
+  purpose: ChatPurpose;
+  flashcard?: {
+    question: string;
+    answer: string;
+  };
+  quiz?: QuestionAnswerBody;
 }
 
 const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
   initialChats = [],
   onClose = () => {},
-  show = false
+  show = false,
+  document,
+  flashcard,
+  quiz,
+  purpose
 }) => {
-  const randomDummyResponsesArray = useMemo(
-    () => [
-      "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-      "It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.",
-      "It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages.",
-      "Contrary to popular belief, Lorem Ipsum is not simply random text.",
-      "The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested.",
-      "There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form.",
-      "If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text.",
-      "All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary.",
-      "Making this the first true generator on the Internet.",
-      "It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable."
-    ],
-    []
-  );
-
   const [chats, setChats] = useState<AIRoomChatModalProps[]>([]);
   const [inputMessage, setInputMessage] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [preContext, setPreContext] = useState<string>("");
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chats]);
+
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    setChats([
-      ...initialChats,
-      {
-        sender: "ai",
-        message:
-          randomDummyResponsesArray[
-            Math.floor(Math.random() * randomDummyResponsesArray.length)
-          ]
-      }
-    ]);
-  }, [initialChats, randomDummyResponsesArray]);
+    if (!initializedRef.current) {
+      setChats([
+        ...initialChats,
+        {
+          sender: "ai",
+          message: (() => {
+            switch (purpose) {
+              case "general":
+                return `Hi, there! Is there anything I can help related to ${document.title}?`;
+              case "flashcard":
+                // parse the flashcards question and answers into one line e.g. Question 1: Answer 1
+                const flashcardQnAPreContext = `Existing flashcard question and answer: ${
+                  flashcard!.question
+                }: ${flashcard!.answer}`;
 
-  const handleSendMessage = (message: string) => {
+                // set precontext
+                setPreContext(flashcardQnAPreContext);
+
+                return `Hi, there! You can ask me any question related to the question: ${
+                  flashcard!.question
+                }.`;
+              case "quiz":
+                // parse the quiz question and answer into one line
+                const quizQnAPreContext = `Existing quiz question: ${
+                  quiz!.question
+                }\nUser's answer: ${quiz!.userAnswer}\nStatus of answer: ${
+                  quiz!.userAnswer
+                }\nExplanation: ${quiz!.explanation}`;
+
+                // set precontext
+                setPreContext(quizQnAPreContext);
+
+                return `Hi, there! You can ask me any question related to the quiz question: ${
+                  quiz!.question
+                }.`;
+            }
+          })()
+        }
+      ]);
+      initializedRef.current = true;
+    }
+  }, [initialChats, document, purpose, flashcard, quiz]);
+
+  const handleSendMessage = async (message: string) => {
     if (message.trim() === "") return;
 
+    // Add user message to chat
+    setChats((prevChats) => [...prevChats, { sender: "user", message }]);
+
+    // Add AI respone telling to wait
     setChats((prevChats) => [
       ...prevChats,
-      { sender: "user", message },
-      {
-        sender: "ai",
-        message:
-          randomDummyResponsesArray[
-            Math.floor(Math.random() * randomDummyResponsesArray.length)
-          ]
-      }
+      { sender: "ai", message: "Please wait, processing your request..." }
     ]);
+
+    // PreContext + Message
+    const mergedMessage = preContext ? `${preContext}\n\n${message}` : message;
+
+    // Check if conversationId is set and if not, create a new conversation
+    if (!conversationId)
+      await fetch(`/api/learning/conversation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: mergedMessage,
+          documentId: document._id,
+          purpose,
+          conversationId
+        })
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            console.error("Error:", data.error);
+            return;
+          }
+
+          setConversationId(data.id);
+
+          // Remove the "Please wait" message
+          setChats((prevChats) =>
+            prevChats.filter(
+              (chat) =>
+                chat.message !== "Please wait, processing your request..."
+            )
+          );
+
+          // Add AI response to chat
+          setChats((prevChats) => [
+            ...prevChats,
+            { sender: "ai", message: data.latestResponse }
+          ]);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          setChats((prevChats) => [
+            ...prevChats,
+            {
+              sender: "ai",
+              message: "An error occurred while processing your request."
+            }
+          ]);
+        });
+    else {
+      await fetch(`/api/learning/conversation?id=${conversationId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message,
+          documentId: document._id,
+          purpose,
+          conversationId
+        })
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            console.error("Error:", data.error);
+            return;
+          }
+
+          // Remove the "Please wait" message
+          setChats((prevChats) =>
+            prevChats.filter(
+              (chat) =>
+                chat.message !== "Please wait, processing your request..."
+            )
+          );
+
+          // Add AI response to chat
+          setChats((prevChats) => [
+            ...prevChats,
+            { sender: "ai", message: data.latestResponse }
+          ]);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          setChats((prevChats) => [
+            ...prevChats,
+            {
+              sender: "ai",
+              message: "An error occurred while processing your request."
+            }
+          ]);
+        });
+    }
   };
 
   const handleClose = () => {
@@ -92,7 +226,7 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
               }`}
             >
               <div
-                className={`p-2 break-all rounded-md text-base ${
+                className={`p-2 break-words rounded-md text-justify ${
                   chat.sender === "user"
                     ? "bg-documind-primary text-white font-medium"
                     : "bg-gray-200 text-gray-700 font-medium"
@@ -102,6 +236,8 @@ const AIRoomChatModal: React.FC<IAIRoomChatModal> = ({
               </div>
             </div>
           ))}
+          {/* Add this div at the end */}
+          <div ref={chatEndRef} />
         </div>
 
         {/* Input Area */}
