@@ -11,6 +11,8 @@ import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { google } from "googleapis";
 import { Readable } from "stream";
 import { drive_v3 } from "googleapis";
+import { protos } from "@google-cloud/documentai";
+import { ClientOptions } from "google-gax";
 
 // Define an interface for the request body}
 
@@ -221,9 +223,6 @@ async function getOrCreateParsedFolder(drive: drive_v3.Drive): Promise<string> {
 
 
 // Improved function to process document with Google Cloud Document AI
-import { protos } from "@google-cloud/documentai";
-import { ClientOptions } from "google-gax";
-
 async function processDocumentWithGcp(
   filePath: string,
   mimeType: string
@@ -489,7 +488,7 @@ function extractContent(
   }
 
   // If all else fails, check if we have a raw response with text content
-  const rawDoc = (document).rawDocument;
+  const rawDoc = document && typeof document === 'object' && 'rawDocument' in document ? document.rawDocument : null;
   if (rawDoc && typeof rawDoc === 'string') {
     try {
       const parsedRaw = JSON.parse(rawDoc);
