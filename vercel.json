@@ -22,6 +22,22 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://documind.web.id"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
         }
       ]
     }
@@ -34,11 +50,13 @@
     }
   ],
   "env": {
-    "NEXTAUTH_URL": "https://documind.web.id"
+    "NEXTAUTH_URL": "https://documind.web.id",
+    "VERCEL_URL": "documind.web.id"
   },
   "build": {
     "env": {
-      "NEXTAUTH_URL": "https://documind.web.id"
+      "NEXTAUTH_URL": "https://documind.web.id",
+      "VERCEL_URL": "documind.web.id"
     }
   }
 } 
