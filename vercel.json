@@ -51,12 +51,14 @@
   ],
   "env": {
     "NEXTAUTH_URL": "https://documind.web.id",
-    "VERCEL_URL": "documind.web.id"
+    "VERCEL_URL": "documind.web.id",
+    "NODE_ENV": "production"
   },
   "build": {
     "env": {
       "NEXTAUTH_URL": "https://documind.web.id",
-      "VERCEL_URL": "documind.web.id"
+      "VERCEL_URL": "documind.web.id",
+      "NODE_ENV": "production"
     }
   }
 } 
