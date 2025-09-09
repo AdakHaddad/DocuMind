@@ -74,7 +74,7 @@ const SignIn = () => {
       if (res?.error) {
         setErrorMessage("Invalid email or password.");
       } else {
-        const userSession = await fetch("/api/auth/session");
+        const userSession = await fetch("/api/auth/me");
         if (!userSession) {
           setErrorMessage("Failed to retrieve user session.");
           return;

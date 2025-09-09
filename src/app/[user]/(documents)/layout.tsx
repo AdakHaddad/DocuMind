@@ -22,7 +22,7 @@ export default function RootLayout({
 
   useEffect(() => {
     const fetchUser = async () => {
-      const response = await fetch(`/api/auth/session`, { method: "GET" });
+      const response = await fetch(`/api/auth/me`, { method: "GET" });
       if (!response.ok) return (window.location.href = "/login");
 
       const data = await response.json();

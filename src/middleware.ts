@@ -14,7 +14,15 @@ export async function middleware(request: NextRequest) {
       },
     })
 
-    response.headers.set('Access-Control-Allow-Origin', 'https://documind.web.id')
+    const origin = request.headers.get('origin') || ''
+    const allowedOrigins = [
+      'https://documind.web.id',
+      'https://www.documind.web.id',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ]
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+    response.headers.set('Access-Control-Allow-Origin', corsOrigin)
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.set('Access-Control-Allow-Credentials', 'true')
